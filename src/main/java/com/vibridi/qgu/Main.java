@@ -1,7 +1,22 @@
 package com.vibridi.qgu;
 
-public class Main {
-    public static void main(String[] args) {
-        System.out.println( "Hello World!" );
+import com.vibridi.fxmlutils.FXUtils;
+import com.vibridi.qgu.utils.AppContext;
+
+import javafx.application.Application;
+import javafx.stage.Stage;
+
+public class Main extends Application {
+    
+    public static void main( String[] args ) {
+        launch();
     }
+
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		FXUtils.newView(this.getClass(), "view/mainview.fxml")
+			.makeStage("QGU " + AppContext.VERSION_NUMBER)
+			.build()
+			.show();
+	}
 }

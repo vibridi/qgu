@@ -11,6 +11,8 @@
 
 	<properties>
 		<junit.version>4.12</junit.version>
+		<poi.version>3.15</poi.version>
+		<fxmlutils.version>1.1.0-SNAPSHOT</fxmlutils.version>
 	</properties>
 
 	<dependencies>
@@ -19,6 +21,18 @@
 			<artifactId>junit</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.vibridi</groupId>
+			<artifactId>fxmlutils</artifactId>
+			<version>${fxmlutils.version}</version>
 		</dependency>
 	</dependencies>
 
@@ -33,6 +47,45 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4.1</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<finalName>qgu-${project.version}</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+					<outputDirectory>${project.build.directory}/qgu-${project.version}</outputDirectory>
+					<archive>
+						<manifest>
+							<mainClass>com.vibridi.qgu.Main</mainClass>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.fxml</include>
+					<include>**/*.css</include>
+				</includes>
+			</resource>
+		</resources>
 	</build>
 </project>
