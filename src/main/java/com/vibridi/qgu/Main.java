@@ -1,7 +1,7 @@
 package com.vibridi.qgu;
 
 import com.vibridi.fxmlutils.FXUtils;
-import com.vibridi.qgu.utils.AppContext;
+import com.vibridi.qgu.util.AppContext;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -19,4 +19,5 @@ public class Main extends Application {
 			.build()
 			.show();
 	}
+	
 }

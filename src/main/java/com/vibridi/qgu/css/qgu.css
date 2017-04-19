@@ -1,0 +1,25 @@
+.qgu-task-list {
+	-fx-padding: 10 0 0 0;
+}
+
+.task-list > .plus-button {
+		
+}
+
+
+.qgu-timeline {
+	-fx-table-cell-border-color: transparent;
+}
+
+
+.gantt-piece-beginning {
+	-fx-background-color: #aa0000;
+}
+
+.gantt-piece-center {
+	-fx-background-color: #00aa00;
+}
+
+.gantt-piece-end {
+	-fx-background-color: #0000aa;
+}

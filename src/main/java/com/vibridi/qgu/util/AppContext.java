@@ -1,4 +1,4 @@
-package com.vibridi.qgu.utils;
+package com.vibridi.qgu.util;
 
 import com.vibridi.qgu.Main;
 
