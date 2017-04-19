@@ -1,11 +1,12 @@
 package com.vibridi.qgu.controller;
 
-import com.vibridi.fxmlutils.controller.BaseController;
+import com.vibridi.fxu.controller.BaseController;
 import com.vibridi.qgu.Main;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.widget.GanttChart;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.AnchorPane;
@@ -38,7 +39,7 @@ public class QGUViewController extends BaseController {
 		AnchorPane.setRightAnchor(progressView, 0.0);
 		AnchorPane.setLeftAnchor(progressView, 0.0);
 		
-		taskPane.getChildren().add(taskList);
+		//taskPane.getChildren().add(taskList);
 		ganttPane.getChildren().add(gantt.getTimelineView());
 	}
 	

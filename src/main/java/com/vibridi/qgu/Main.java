@@ -1,6 +1,6 @@
 package com.vibridi.qgu;
 
-import com.vibridi.fxmlutils.FXUtils;
+import com.vibridi.fxu.builder.FXBuilder;
 import com.vibridi.qgu.util.AppContext;
 
 import javafx.application.Application;
@@ -14,7 +14,7 @@ public class Main extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		FXUtils.newView(this.getClass(), "view/mainview.fxml")
+		FXBuilder.newView(this.getClass(), "view/mainview.fxml")
 			.makeStage("QGU " + AppContext.VERSION_NUMBER)
 			.build()
 			.show();
