@@ -2,18 +2,20 @@ package com.vibridi.qgu.model;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GanttTask {
 	
 	private int level;
+	private int[] path;
 	private String name;
 	private LocalDate startDate;
 	private LocalDate endDate;
 	//private long daysWorked;
 	//private boolean isOverdue;
 	
-	private GanttTask parent;
+	//private GanttTask parent;
 	private List<GanttTask> children;
 	
 	public GanttTask() {
@@ -26,10 +28,11 @@ public class GanttTask {
 	
 	public GanttTask(String name, LocalDate startDate, LocalDate endDate) {
 		this.level = 0;
+		this.path = new int[0];
 		this.name = name;
 		this.startDate = startDate;
 		this.endDate = endDate;
-		this.parent = null;
+		//this.parent = null;
 		this.children = new ArrayList<GanttTask>();
 	}
 	
@@ -52,25 +55,31 @@ public class GanttTask {
 		return true;
 		
 	}
+	
+	public int size() {
+		return children.size();
+	}
 
 	public List<GanttTask> getChildren() {
 		return children;
 	}
 	
 	public int[] getPath() {
-		int[] path = new int[level];
-		GanttTask t = this;
-		for(int i = level; i > 0; i--, t = t.parent) {
-			path[i-1] = t.parent.children.indexOf(t);
-		}
 		return path;
 	}
 	
 	// appends to the end of the list
 	public void addChild(GanttTask task) {
-		task.setLevel(level + 1);
-		task.setParent(this);		
+		task.level = level + 1;
+		task.path = Arrays.copyOf(path, level + 1);
+		task.path[task.level-1] = children.size();
 		children.add(task);
+	}
+	
+	public void removeChild(GanttTask task) {
+		GanttTask rm = children.get(children.indexOf(task));
+		
+		
 	}
 	
 	public GanttTask getChild(int... path) {
@@ -98,14 +107,6 @@ public class GanttTask {
 
 	public void setLevel(int level) {
 		this.level = level;
-	}
-
-	public GanttTask getParent() {
-		return parent;
-	}
-
-	public void setParent(GanttTask parent) {
-		this.parent = parent;
 	}
 	
 	public String getName() {

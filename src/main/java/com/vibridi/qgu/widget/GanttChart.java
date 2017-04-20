@@ -25,10 +25,10 @@ public class GanttChart {
 		
 		GanttTask root = TaskUtils.readTaskTree();
 		
-		taskView.addTaskTree(root);
+		//taskView.addTaskTree(root);
 		
-		//taskView.addTask();
-		//taskView.addTask();
+		taskView.addTask();
+		taskView.addTask();
 		
 //		taskView.getRoot().getChildren().add(new TreeItem<ObservableGanttTask>(new ObservableGanttTask(task)));
 //		taskView.getRoot().getChildren().add(new TreeItem<ObservableGanttTask>(new ObservableGanttTask(task2)));

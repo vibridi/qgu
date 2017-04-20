@@ -33,7 +33,7 @@ public class MainTest {
         
         item = root.getChild(0,2,0);
         assertTrue(item.getName().trim().equals("item020"));
-        assertTrue(item.getPath().length == 3);        
+        assertTrue(item.getPath().length == 3); 
         assertTrue(item.getPath()[0] == 0);
         assertTrue(item.getPath()[1] == 2);
         assertTrue(item.getPath()[2] == 0);
