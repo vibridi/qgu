@@ -11,6 +11,7 @@ public class GanttBarPiece extends Pane {
 	}
 	
 	private PieceType type;
+	private boolean isOverdue;
 	
 	public GanttBarPiece(PieceType type) {
 		this.type = type;
@@ -26,7 +27,10 @@ public class GanttBarPiece extends Pane {
 			getStyleClass().add("gantt-piece-end");
 			break;
 		}
-		
+	}
+	
+	public PieceType getPieceType() {
+		return type;
 	}
 	
 }

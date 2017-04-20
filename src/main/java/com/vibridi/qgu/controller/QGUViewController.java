@@ -4,11 +4,11 @@ import com.vibridi.fxu.controller.BaseController;
 import com.vibridi.qgu.Main;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.widget.GanttChart;
+import com.vibridi.qgu.widget.ObservableGanttTask;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.WindowEvent;
 
@@ -18,7 +18,7 @@ public class QGUViewController extends BaseController {
 	@FXML private AnchorPane ganttPane;
 	
 	private GanttChart gantt;
-	private TreeView<String> taskList;
+	private TreeTableView<ObservableGanttTask> taskList;
 	private TableView<GanttTask> progressView;
 	
 	public QGUViewController() {
@@ -39,7 +39,7 @@ public class QGUViewController extends BaseController {
 		AnchorPane.setRightAnchor(progressView, 0.0);
 		AnchorPane.setLeftAnchor(progressView, 0.0);
 		
-		//taskPane.getChildren().add(taskList);
+		taskPane.getChildren().add(taskList);
 		ganttPane.getChildren().add(gantt.getTimelineView());
 	}
 	

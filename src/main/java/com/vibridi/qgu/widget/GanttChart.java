@@ -4,30 +4,36 @@ import java.time.LocalDate;
 import java.time.Month;
 
 import com.vibridi.qgu.model.GanttTask;
+import com.vibridi.qgu.util.TaskUtils;
 
 import javafx.collections.FXCollections;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.TreeTableView;
 
 public class GanttChart {
 
-	private TreeView<String> taskView;
+	private TaskTreeView taskView;
 	private TableView<GanttTask> timelineView;
 	
 	private LocalDate chartStartDate;
 	private LocalDate chartEndDate;
 	
 	public GanttChart() {
-		taskView = new TreeView<String>();
-		taskView.getStyleClass().add("qgu-task-list");
-		taskView.setRoot(new TreeItem<String>("Root"));
-		taskView.getRoot().setExpanded(true);
-		taskView.setCellFactory(view -> new TaskCell());
+		taskView = new TaskTreeView();
 		
-		taskView.getRoot().getChildren().add(new TreeItem<String>("Item 1"));
+		GanttTask root = TaskUtils.readTaskTree();
+		
+		taskView.addTaskTree(root);
+		
+		//taskView.addTask();
+		//taskView.addTask();
+		
+//		taskView.getRoot().getChildren().add(new TreeItem<ObservableGanttTask>(new ObservableGanttTask(task)));
+//		taskView.getRoot().getChildren().add(new TreeItem<ObservableGanttTask>(new ObservableGanttTask(task2)));
+//		taskView.getRoot().getChildren().get(0).getChildren().add(new TreeItem<ObservableGanttTask>(new ObservableGanttTask(task)));
+//		
 		
 		timelineView = new TableView<GanttTask>();
 		timelineView.getStyleClass().add("qgu-timeline");
@@ -39,22 +45,6 @@ public class GanttChart {
 		
 		initChart(chartStartDate,chartEndDate);
 
-	}
-	
-	
-	
-	
-	
-	public TreeView<String> getTaskView() {
-		return taskView;
-	}
-	
-	public TableView<GanttTask> getTimelineView() {
-		return timelineView;
-	}
-	
-	public void setRootText(String text) {
-		taskView.getRoot().setValue(text);
 	}
 	
 	private void initChart(LocalDate start, LocalDate end) {
@@ -93,5 +83,24 @@ public class GanttChart {
 //		});
 		
 	}
+
+	public TreeTableView<ObservableGanttTask> getTaskView() {
+		return taskView;
+	}
 	
+	public TableView<GanttTask> getTimelineView() {
+		return timelineView;
+	}
+	
+//	public void setRootText(String text) {
+//		taskView.getRoot().setValue(text);
+//	}
+	
+	public void addTask(GanttTask task) {
+		timelineView.getItems().add(task);
+	}
+	
+	public void addTask(int index, GanttTask task) {
+		timelineView.getItems().add(index, task);
+	}
 }
