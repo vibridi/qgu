@@ -24,11 +24,24 @@ public class GanttTreeItem extends TreeItem<ObservableGanttTask> {
 		return getChildren().size();
 	}
 	
+	public void clear() {
+		task.clear();
+		getChildren().clear();
+	}
+	
 	public void addChild(GanttTreeItem child) {
 		task.addChild(child.getValue().getTask());
 		getChildren().add(child);
 	}
 	
+	/**
+	 * Adds a child to the node represented by this path. Example: <br><br>
+	 * path = [0,1,1] <br>
+	 * child.path = [0,1,1,parent.size()]
+	 * 
+	 * @param child
+	 * @param path
+	 */
 	public void addChild(GanttTreeItem child, int... path) {
 		GanttTreeItem parent = this;
 		for(int i = 0; i < path.length; i++) {
@@ -38,11 +51,15 @@ public class GanttTreeItem extends TreeItem<ObservableGanttTask> {
 		parent.addChild(child);
 	}
 
-	public GanttTreeItem removeChild(int index) { // TODO remove last
+	public GanttTreeItem removeChild(int... path) {
+		task.removeChild(path);
 		
-		return (GanttTreeItem) getChildren().remove(index);
+		GanttTreeItem item = this;
+		for(int i = 0; i < path.length - 1; i++)
+			item = (GanttTreeItem) item.getChildren().get(path[i]);
+		
+		return (GanttTreeItem) item.getChildren().remove(path[path.length - 1]);
+
 	}
-	
-	public GanttTreeItem remove
-	
+		
 }

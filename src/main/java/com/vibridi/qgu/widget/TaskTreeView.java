@@ -1,10 +1,17 @@
 package com.vibridi.qgu.widget;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.vibridi.fxu.dialog.FXDialog;
 import com.vibridi.qgu.model.GanttTask;
+import com.vibridi.qgu.util.TaskUtils;
+import com.vibridi.qgu.widget.api.TaskListener;
+import com.vibridi.qgu.widget.api.TaskTreeWalkerCallback;
 
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
@@ -13,20 +20,27 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 
 	private final GanttTreeItem itemRoot;
 	private final TreeTableColumn<ObservableGanttTask, String> title;
+	private final TreeTableColumn<ObservableGanttTask, String> taskId;
 	private final TreeTableColumn<ObservableGanttTask, String> taskName;
 	private final TreeTableColumn<ObservableGanttTask, String> startDate;
 	private final TreeTableColumn<ObservableGanttTask, String> endDate;
 	private final TreeTableColumn<ObservableGanttTask, String> plus;
+	
+	private List<TaskListener> taskLsnr;
+	
 		
 	public TaskTreeView() {
-		itemRoot = new GanttTreeItem(new ObservableGanttTask(new GanttTask())); 
+		itemRoot = new GanttTreeItem(new ObservableGanttTask(new GanttTask("root"))); 
 		
 		setRoot(itemRoot);
 		setShowRoot(false);
 		setEditable(true);
-		//setColumnResizePolicy(CONSTRAINED_RESIZE_POLICY);
 		
 		title = new TreeTableColumn<ObservableGanttTask,String>("Task List");
+		
+		taskId = new TreeTableColumn<ObservableGanttTask,String>("Id");
+//		taskId.setCellValueFactory(cellData -> cellData.getValue().getValue().idProperty());
+//		taskId.setSortable(false);
 		
 		taskName = new TreeTableColumn<ObservableGanttTask,String>("Task");
 		taskName.setCellValueFactory(cellData -> cellData.getValue().getValue().nameProperty());
@@ -49,11 +63,13 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		plus.setResizable(false);
 		plus.setPrefWidth(TaskToolbarCell.MIN_WIDTH + 0.19999);
 		
+		//title.getColumns().add(taskId);
 		title.getColumns().add(taskName);
 		title.getColumns().add(startDate);
 		title.getColumns().add(endDate);
 		title.getColumns().add(plus);
 		
+		//taskId.setPrefWidth(40.0);
 		taskName.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));
 		startDate.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));
 		endDate.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));		
@@ -62,13 +78,20 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		getColumns().add(title);
 		
 		getStyleClass().add("qgu-task-list");
+		
+		taskLsnr = new ArrayList<>();
 	}
 	
 	private TaskToolbarCell createTaskCell(TreeTableColumn<ObservableGanttTask, String> parent) {
 		TaskToolbarCell taskCell = new TaskToolbarCell();
 		taskCell.setOnAddChild(this::onAddChild);
 		taskCell.setOnDeleteSelf(this::onDeleteSelf);
+		taskCell.setOnDebug(this::onDebug);
 		return taskCell;
+	}
+	
+	public void addTaskListener(TaskListener lsnr) {
+		taskLsnr.add(lsnr);
 	}
 	
 	/**
@@ -85,7 +108,7 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	 * @param path
 	 */
 	public void addTask(int... path) {
-		itemRoot.addChild(new GanttTreeItem(new GanttTask("New Task " + itemRoot.size())), path);
+		itemRoot.addChild(new GanttTreeItem(new GanttTask("New Task")), path);
 	}
 	
 	/**
@@ -109,80 +132,49 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	
 	
 	public void addTaskTree(GanttTask root) {
-		
-		walkTree(root, null);
-		
-//		taskRoot = root;
-//		
-//		
-//        
-//        for(String line : lines) {
-//        	int tab = line.lastIndexOf('\t');
-//        	GanttTask parent = root;
-//        	for(int i = 0; i < tab; i++)
-//        		parent = parent.getChildren().get(parent.getChildren().size() - 1);
-//        	parent.addChild(new GanttTask(line));
-//        }
+		itemRoot.clear();
+		AtomicInteger index = new AtomicInteger(0);
+		TaskUtils.walkDepthFirst(root, node -> {
+			if(node.getPath().length == 0)
+				return;
+			GanttTask task = node.clone();
+			itemRoot.addChild(new GanttTreeItem(task), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
+			
+			if(!task.isRoot())
+				taskLsnr.forEach(lsnr -> lsnr.taskAddedEvent(index.getAndIncrement(), task));
+		});
 	}
 	
-	private GanttTreeItem walkTree(GanttTreeItem parent, GanttTreeItem child) {	
-		if(child.size() == 0) 
-			return child;
-		
-		
-		
+	public GanttTreeItem removeTask(int... path) {
+		return itemRoot.removeChild(path);
 	}
 	
+	public void walkDepthFirst(TaskTreeWalkerCallback callback) {
+		TaskUtils.walkDepthFirst(itemRoot.getValue().getTask(), callback);
+	}
 	
 	private Boolean onAddChild(Integer absoluteIndex, ObservableGanttTask observableTask) {
 		addTask(observableTask.getTask().getPath());
-
-		// TODO fire event or call timeline method
-		// the absolute index is used to add the row in the gantt timeline
+		taskLsnr.forEach(lsnr -> lsnr.taskAddedEvent(absoluteIndex, observableTask.getTask()));
 		return true;
 	}
 	
-	private Boolean onDeleteSelf(Integer absoluteIndex, ObservableGanttTask task) {
-		if(task.getTask().getChildren().size() > 0) {
+	private Boolean onDeleteSelf(Integer absoluteIndex, ObservableGanttTask observableTask) {
+		if(observableTask.getTask().size() > 0) {
 			ButtonType type = FXDialog.binaryChoiceAlert("This will delete also all sub-tasks. Proceed?").showAndWait().get();
 			if(type == ButtonType.NO)
 				return false;
 		}
 		
-		TreeItem<ObservableGanttTask> parent = itemRoot;
-		int[] path = task.getTask().getPath();
-		
-		System.out.print("Removing " + task.getName() + " ");
-		for(int i = 0; i < path.length; i++)
-			System.out.print(path[i] + "\t");
-		System.out.println("");
-		
-		for(int i = 0; i < path.length - 1; i++)
-			parent = parent.getChildren().get(path[i]);
-		
-		parent.getChildren().remove(path[path.length - 1]);
-		
-		// TODO fire event or call timeline method
-		
+		removeTask(observableTask.getTask().getPath());
+		taskLsnr.forEach(lsnr -> lsnr.taskRemovedEvent(absoluteIndex, observableTask.getTask()));
 		return true;
 	}
 	
-	// TODO doesn't work with addTaskTree
-	private void addChild(ObservableGanttTask parentTask, ObservableGanttTask childTask) {
-		TreeItem<ObservableGanttTask> parent = itemRoot;
-		int[] path = childTask.getTask().getPath();
-		
-		for(int i = 0; i < path.length; i++)
-			System.out.print(path[i] + "\t");
-		System.out.println("");
-		
-		
-		for(int i = 0; i < path.length - 1; i++)
-			parent = parent.getChildren().get(path[i]);
-		
-		TreeItem<ObservableGanttTask> item = new TreeItem<>(childTask);
-		item.setExpanded(true);
-		parent.getChildren().add(item);
+	private Boolean onDebug(Integer absoluteIndex, ObservableGanttTask task) {
+		System.out.print(task.getTask().getName() + " path:\t");
+		TaskUtils.printPath(task.getTask().getPath());
+		return true;
 	}
 	
 }

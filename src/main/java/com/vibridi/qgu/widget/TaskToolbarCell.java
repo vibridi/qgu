@@ -27,7 +27,7 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	private ObservableGanttTask item;
 	
 	private HBox hbox;
-	private Button addSibling;
+	private Button debugButton;
 	private Button addChild;
 	private Button deleteSelf;
 	private Pane spacer;
@@ -43,6 +43,7 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 		//addSibling = createButton("+", addSiblingFunc);
 		addChild = createButton("+");
 		deleteSelf = createButton("x");
+		debugButton = createButton("D");
 		
 		//FXUtils.setTooltip(addSibling, "Add a new task");
 		FXUtils.setTooltip(addChild, "Add a new sub-task");
@@ -52,6 +53,7 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 			if(item == null)
 				return;
 			deleteSelf.setVisible(true);
+			debugButton.setVisible(true);
 			if(item.getTask().getLevel() <= 2)
 				addChild.setVisible(true);
 			
@@ -60,15 +62,17 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 		setOnMouseExited(event -> {
 			addChild.setVisible(false);
 			deleteSelf.setVisible(false);
+			debugButton.setVisible(false);
 		});
 
 		spacer = new Pane();
 		
-		hbox.getChildren().addAll(/*addSibling,*/ addChild, deleteSelf, spacer);
+		hbox.getChildren().addAll(/*addSibling,*/ addChild, deleteSelf, debugButton, spacer);
 		hbox.setSpacing(SPACING);
 		hbox.setVisible(true);
 		addChild.setVisible(false);
 		deleteSelf.setVisible(false);
+		debugButton.setVisible(false);
 		HBox.setHgrow(spacer, Priority.ALWAYS);
 	}
 	
@@ -94,6 +98,10 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	
 	public void setOnDeleteSelf(BiFunction<Integer, ObservableGanttTask, Boolean> func) {
 		deleteSelf.setOnAction(event -> func.apply(absoluteIndex, item));
+	}
+	
+	public void setOnDebug(BiFunction<Integer, ObservableGanttTask, Boolean> func) {
+		debugButton.setOnAction(event -> func.apply(absoluteIndex, item));
 	}
 	
 	private Button createButton(String text) {

@@ -7,6 +7,8 @@ import com.vibridi.qgu.widget.GanttChart;
 import com.vibridi.qgu.widget.ObservableGanttTask;
 
 import javafx.fxml.FXML;
+import javafx.scene.Node;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.AnchorPane;
@@ -18,34 +20,40 @@ public class QGUViewController extends BaseController {
 	@FXML private AnchorPane ganttPane;
 	
 	private GanttChart gantt;
-	private TreeTableView<ObservableGanttTask> taskList;
-	private TableView<GanttTask> progressView;
+	private TreeTableView<ObservableGanttTask> taskView;
+	private TableView<GanttTask> timelineView;
 	
 	public QGUViewController() {
 		gantt = new GanttChart();
-		taskList = gantt.getTaskView();
-		progressView = gantt.getTimelineView();
+		taskView = gantt.getTaskView();
+		timelineView = gantt.getTimelineView();
 	}
 	
 	@FXML
 	public void initialize() {
-		AnchorPane.setTopAnchor(taskList, 0.0);
-		AnchorPane.setBottomAnchor(taskList, 0.0);
-		AnchorPane.setRightAnchor(taskList, 0.0);
-		AnchorPane.setLeftAnchor(taskList, 0.0);
+		AnchorPane.setTopAnchor(taskView, 0.0);
+		AnchorPane.setBottomAnchor(taskView, 0.0);
+		AnchorPane.setRightAnchor(taskView, 0.0);
+		AnchorPane.setLeftAnchor(taskView, 0.0);
 		
-		AnchorPane.setTopAnchor(progressView, 0.0);
-		AnchorPane.setBottomAnchor(progressView, 0.0);
-		AnchorPane.setRightAnchor(progressView, 0.0);
-		AnchorPane.setLeftAnchor(progressView, 0.0);
+		AnchorPane.setTopAnchor(timelineView, 0.0);
+		AnchorPane.setBottomAnchor(timelineView, 0.0);
+		AnchorPane.setRightAnchor(timelineView, 0.0);
+		AnchorPane.setLeftAnchor(timelineView, 0.0);
 		
-		taskPane.getChildren().add(taskList);
+		taskPane.getChildren().add(taskView);
 		ganttPane.getChildren().add(gantt.getTimelineView());
 	}
 	
 	@Override
 	public void setup() {
 		stage.getScene().getStylesheets().add(Main.class.getResource("css/qgu.css").toString());
+		stage.setOnShown(event -> {
+			Node n1 = taskView.lookup(".scroll-bar");
+			Node n2 = timelineView.lookup(".scroll-bar");
+			if(n1 instanceof ScrollBar && n2 instanceof ScrollBar)
+				((ScrollBar) n1).valueProperty().bindBidirectional(((ScrollBar) n2).valueProperty());
+		});
 	}
 
 	@FXML

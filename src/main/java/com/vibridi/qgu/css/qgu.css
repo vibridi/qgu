@@ -1,5 +1,17 @@
+* {
+	-fx-qgu-table-row-height: 25px;
+}
+
 .qgu-task-list {
 	-fx-padding: 0 0 0 0;
+}
+
+.qgu-task-list .tree-table-row-cell {
+	-fx-cell-size: -fx-qgu-table-row-height;
+}
+
+.qgu-task-list .tree-table-row-cell:odd {
+	-fx-background: -fx-control-inner-background-alt;
 }
 
 .qgu-task-list .task-list-button {
@@ -63,34 +75,25 @@
 	-fx-border-width: 0px;
 }
 
-.ipad-dark-grey {
-
-	-fx-background-color: skyblue, gray, lightgreen;
-	-fx-background-insets: 1 0 1 1, 5 0 7 5, 7 0 7 7;
-	
-	/*-fx-border-color: radial-gradient(center 50% 40%, radius 120%, #b8ee36 40%, #80c800 50%);
-	*/
-	
-	-fx-border-width: 10px;
-	
-	
+.qgu-timeline .table-row-cell {
+	-fx-cell-size: -fx-qgu-table-row-height;
 }
 
 .gantt-piece-beginning {	
-	-fx-background-color: #666666, #84b1ff, #468aff, #adcbff;
+	-fx-background-color: #468aff, #84b1ff, #468aff, #adcbff;
 	-fx-background-insets: 0 0 0 0, 0 0 2 0, 2 0 4 2, 3 0 4 3;
 	-fx-border-width: 0;
 	-fx-background-radius: 5 0 0 5;
 }
 
 .gantt-piece-center {
-	-fx-background-color: #666666, #84b1ff, #468aff, #adcbff;
+	-fx-background-color: #468aff, #84b1ff, #468aff, #adcbff;
 	-fx-background-insets: 0 0 0 0, 0 0 2 0, 2 0 4 0, 3 0 4 0;
 	-fx-border-width: 0;
 }
 
 .gantt-piece-end {
-	-fx-background-color: #666666, #84b1ff, #468aff, #adcbff;
+	-fx-background-color: #468aff, #84b1ff, #468aff, #adcbff;
 	-fx-background-insets: 0 0 0 0, 0 0 2 0, 2 2 4 0, 3 3 4 0;
 	-fx-border-width: 0;
 	-fx-background-radius: 0 5 5 0;
