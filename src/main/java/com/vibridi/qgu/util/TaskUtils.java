@@ -2,7 +2,13 @@ package com.vibridi.qgu.util;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -64,10 +70,31 @@ public class TaskUtils {
 	public static String pathToString(int[] path) {
 		return IntStream.of(path).mapToObj(Integer::toString).collect(Collectors.joining("."));
 	}
+	
+	public static int[] stringToPath(String path) throws NumberFormatException {
+		return Arrays.stream(path.split("\\.")).mapToInt(Integer::parseInt).toArray();
+	}
+	
+	public static GanttTask randomTask() {
+		int year = LocalDate.now().getYear();
+		return randomTask(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+	}
+	
+	public static GanttTask randomTask(LocalDate startDate, LocalDate endDate) {
+		GanttTask task = new GanttTask("New Task");
+		long days = ChronoUnit.DAYS.between(startDate, endDate);
+		task.setStartDate(startDate);
+		task.setEndDate(startDate.plusDays(ThreadLocalRandom.current().nextLong(days+1)));
+		return task;
+	}
 
 	public static void printPath(int[] path) {
 		IntStream.of(path).forEach(i -> System.out.print(i + "\t"));
 		System.out.println();
+	}
+	
+	public static void printTree(GanttTask root) {
+		walkDepthFirst(root, node -> System.out.println(node.toString()));
 	}
 	
 }

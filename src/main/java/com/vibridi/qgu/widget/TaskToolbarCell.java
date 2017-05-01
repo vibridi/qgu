@@ -3,6 +3,7 @@ package com.vibridi.qgu.widget;
 import java.util.function.BiFunction;
 
 import com.vibridi.fxu.FXUtils;
+import com.vibridi.fxu.keyboard.FXKeyboard;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.TreeTableCell;
@@ -20,7 +21,7 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	static {
 		BUTTON_SIZE = 3.0;
 		SPACING = 2.0;
-		MIN_WIDTH = 80.0;
+		MIN_WIDTH = 0.0;
 	}
 	
 	private int absoluteIndex;
@@ -40,12 +41,10 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	private void initialize() {
 		hbox = new HBox();
 		
-		//addSibling = createButton("+", addSiblingFunc);
 		addChild = createButton("+");
 		deleteSelf = createButton("x");
 		debugButton = createButton("D");
 		
-		//FXUtils.setTooltip(addSibling, "Add a new task");
 		FXUtils.setTooltip(addChild, "Add a new sub-task");
 		FXUtils.setTooltip(deleteSelf, "Delete this task");
 		
@@ -67,7 +66,7 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 
 		spacer = new Pane();
 		
-		hbox.getChildren().addAll(/*addSibling,*/ addChild, deleteSelf, debugButton, spacer);
+		hbox.getChildren().addAll(addChild, deleteSelf, debugButton, spacer);
 		hbox.setSpacing(SPACING);
 		hbox.setVisible(true);
 		addChild.setVisible(false);
@@ -79,6 +78,8 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	@Override
 	public void updateItem(String text, boolean empty) {
 		super.updateItem(text, empty);
+		
+		
 		
 		if(empty) {
 			setGraphic(null);
@@ -94,6 +95,8 @@ public class TaskToolbarCell extends TreeTableCell<ObservableGanttTask,String> {
 	
 	public void setOnAddChild(BiFunction<Integer, ObservableGanttTask, Boolean> func) {
 		addChild.setOnAction(event -> func.apply(absoluteIndex, item));
+		// TODO it appears this doesn't work
+		//FXKeyboard.setKeyCombinationShortcut(addChild, "Ctrl+Shift+N", event -> func.apply(absoluteIndex, item));
 	}
 	
 	public void setOnDeleteSelf(BiFunction<Integer, ObservableGanttTask, Boolean> func) {

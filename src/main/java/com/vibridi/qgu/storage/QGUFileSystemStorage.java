@@ -1,19 +1,49 @@
 package com.vibridi.qgu.storage;
 
-import com.vibridi.qgu.storage.api.IQGUStorage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
-public class QGUFileSystemStorage implements IQGUStorage {
+import com.vibridi.qgu.exception.UnreadableGanttFileException;
+import com.vibridi.qgu.model.GanttTask;
 
-	@Override
-	public void save() {
-		// TODO Auto-generated method stub
+public class QGUFileSystemStorage {
 		
+	public QGUFileSystemStorage() {
+
 	}
 
-	@Override
-	public void load() {
-		// TODO Auto-generated method stub
+	public void saveTree(File file, GanttTask root) throws IOException {
+		assert(file != null);
+		assert(file.exists());
 		
+		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
+		oos.writeObject(root);
+		oos.close();
+	}
+
+	/**
+	 * 
+	 * @param file
+	 * @return the deserialized object
+	 * @throws IOException
+	 * @throws UnreadableGanttFileException 
+	 */
+	public GanttTask load(File file) throws UnreadableGanttFileException {
+		assert(file != null);
+		assert(file.exists());
+		
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
+			GanttTask deserialized = (GanttTask) ois.readObject();
+			ois.close();
+			return deserialized;
+		} catch(Throwable e) {
+			throw new UnreadableGanttFileException("Cannot open gantt file", e);
+		} 
 	}
 
 }

@@ -11,7 +11,9 @@ import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
 import com.vibridi.qgu.widget.api.TaskTreeWalkerCallback;
 
+import javafx.collections.ListChangeListener;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
@@ -20,14 +22,13 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 
 	private final GanttTreeItem itemRoot;
 	private final TreeTableColumn<ObservableGanttTask, String> title;
-	private final TreeTableColumn<ObservableGanttTask, String> taskId;
 	private final TreeTableColumn<ObservableGanttTask, String> taskName;
 	private final TreeTableColumn<ObservableGanttTask, String> startDate;
 	private final TreeTableColumn<ObservableGanttTask, String> endDate;
-	private final TreeTableColumn<ObservableGanttTask, String> plus;
 	
-	private List<TaskListener> taskLsnr;
+	private List<TaskListener> taskLsnr; // TODO possibly not needed
 	
+	//private Map<String,GanttTask> TODO add something for computing the absolute index of the task
 		
 	public TaskTreeView() {
 		itemRoot = new GanttTreeItem(new ObservableGanttTask(new GanttTask("root"))); 
@@ -37,10 +38,6 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		setEditable(true);
 		
 		title = new TreeTableColumn<ObservableGanttTask,String>("Task List");
-		
-		taskId = new TreeTableColumn<ObservableGanttTask,String>("Id");
-//		taskId.setCellValueFactory(cellData -> cellData.getValue().getValue().idProperty());
-//		taskId.setSortable(false);
 		
 		taskName = new TreeTableColumn<ObservableGanttTask,String>("Task");
 		taskName.setCellValueFactory(cellData -> cellData.getValue().getValue().nameProperty());
@@ -57,27 +54,23 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		endDate.setCellFactory(TextFieldTreeTableCell.<ObservableGanttTask>forTreeTableColumn());
 		endDate.setSortable(false);
 		
-		plus = new TreeTableColumn<ObservableGanttTask,String>("");
-		plus.setCellFactory(this::createTaskCell);
-		plus.setSortable(false);
-		plus.setResizable(false);
-		plus.setPrefWidth(TaskToolbarCell.MIN_WIDTH + 0.19999);
+//		plus = new TreeTableColumn<ObservableGanttTask,String>("");
+//		plus.setCellFactory(this::createTaskCell);
+//		plus.setSortable(false);
+//		plus.setResizable(false);
+//		plus.setPrefWidth(TaskToolbarCell.MIN_WIDTH + 0.19999);
 		
-		//title.getColumns().add(taskId);
 		title.getColumns().add(taskName);
 		title.getColumns().add(startDate);
 		title.getColumns().add(endDate);
-		title.getColumns().add(plus);
+		//title.getColumns().add(plus);
 		
-		//taskId.setPrefWidth(40.0);
-		taskName.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));
-		startDate.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));
-		endDate.prefWidthProperty().bind(this.widthProperty().subtract(TaskToolbarCell.MIN_WIDTH).multiply(0.33329));		
+		taskName.prefWidthProperty().bind(this.widthProperty().multiply(0.5));
+		startDate.prefWidthProperty().bind(this.widthProperty().multiply(0.25));
+		endDate.prefWidthProperty().bind(this.widthProperty().multiply(0.25));		
 		title.prefWidthProperty().bind(this.widthProperty());
 		
 		getColumns().add(title);
-		
-		getStyleClass().add("qgu-task-list");
 		
 		taskLsnr = new ArrayList<>();
 	}
@@ -117,7 +110,9 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	 * @param task
 	 */
 	public void addTask(GanttTask task) {
-		itemRoot.addChild(new GanttTreeItem(task));
+		GanttTreeItem item = new GanttTreeItem(task);
+		itemRoot.addChild(item);
+		//this.getRow(item);
 	}
 	
 	/**
@@ -141,7 +136,7 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 			itemRoot.addChild(new GanttTreeItem(task), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
 			
 			if(!task.isRoot())
-				taskLsnr.forEach(lsnr -> lsnr.taskAddedEvent(index.getAndIncrement(), task));
+				fireAddEvent(index.getAndIncrement(), task);
 		});
 	}
 	
@@ -149,8 +144,23 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		return itemRoot.removeChild(path);
 	}
 	
+	public GanttTask getGanttRoot() {
+		return itemRoot.getValue().getTask();
+	}
+	
 	public void walkDepthFirst(TaskTreeWalkerCallback callback) {
 		TaskUtils.walkDepthFirst(itemRoot.getValue().getTask(), callback);
+	}
+	
+	public void clearTaskTree() {
+		itemRoot.clear();
+	}
+	
+	/* ******************
+	 * PRIVATE METHODS
+	 * ******************/
+	private void fireAddEvent(int absoluteIndex, GanttTask task) {
+		taskLsnr.forEach(lsnr -> lsnr.taskAddedEvent(absoluteIndex, task));
 	}
 	
 	private Boolean onAddChild(Integer absoluteIndex, ObservableGanttTask observableTask) {
@@ -165,7 +175,7 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 			if(type == ButtonType.NO)
 				return false;
 		}
-		
+				
 		removeTask(observableTask.getTask().getPath());
 		taskLsnr.forEach(lsnr -> lsnr.taskRemovedEvent(absoluteIndex, observableTask.getTask()));
 		return true;

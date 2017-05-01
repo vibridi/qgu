@@ -1,24 +1,26 @@
 package com.vibridi.qgu.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.vibridi.qgu.util.TaskUtils;
 
-public class GanttTask implements Cloneable {
+public class GanttTask implements Cloneable, Serializable {
+	private static final long serialVersionUID = 4669501028180213212L;
 	
+	private String uid;
 	private int level;
 	private int[] path;
 	private String name;
 	private LocalDate startDate;
 	private LocalDate endDate;
-	//private long daysWorked;
-	//private boolean isOverdue;
-	
-	//private GanttTask parent;
 	private List<GanttTask> children;
 	
 	public GanttTask() {
@@ -26,6 +28,7 @@ public class GanttTask implements Cloneable {
 	}
 	
 	public GanttTask(GanttTask that) {
+		this.uid = UUID.randomUUID().toString();
 		this.level = 0;
 		this.path = new int[0];
 		this.name = that.name;
@@ -76,10 +79,25 @@ public class GanttTask implements Cloneable {
 		return new GanttTask(name, LocalDate.from(startDate), LocalDate.from(endDate));
 	}
 	
+	@Override
+	public String toString() {
+		return Arrays.stream(new String[] {
+				TaskUtils.pathToString(path),
+				name,
+				startDate.toString(),
+				endDate.toString()
+			})
+			.collect(Collectors.joining("|"));
+	}
+	
 	public boolean isRoot() {
 		return level == 0;
 	}
 	
+	/**
+	 * Returns the number of children this node has.
+	 * @return Equivalent to children.size();
+	 */
 	public int size() {
 		return children.size();
 	}
@@ -172,6 +190,10 @@ public class GanttTask implements Cloneable {
 		if(endDate.compareTo(LocalDate.now()) < 0)
 			return true;
 		return false;
+	}
+	
+	public String getUid() {
+		return uid;
 	}
 	
 	public int getLevel() {

@@ -2,7 +2,11 @@ package com.vibridi.qgu;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -140,6 +144,26 @@ public class MainTest {
 		assertTrue(root.getChild(0,1,0).getName().equals("item020"));
 	}
 	
+	@Test
+	public void testSerialize() throws IOException, URISyntaxException, ClassNotFoundException {
+		GanttTask root = readTaskTree();
+		
+		GanttTask item = root.getChild(3,1,0);
+		assertTrue(item.getName().trim().equals("item310"));
+		assertTrue(item.getPath().length == 3);        
+		assertTrue(item.getPath()[0] == 3);
+		assertTrue(item.getPath()[1] == 1);
+		assertTrue(item.getPath()[2] == 0);
+		
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(bos);
+		oos.writeObject(root);
+		
+		ObjectInputStream ios = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+		
+		GanttTask deserialized = (GanttTask) ios.readObject();
+		TaskUtils.printTree(deserialized);
+	}
 	
 	private GanttTask readTaskTree() throws IOException, URISyntaxException {
 		List<String> lines = Files.readAllLines(Paths.get(this.getClass().getResource("/tasktree.txt").toURI()));

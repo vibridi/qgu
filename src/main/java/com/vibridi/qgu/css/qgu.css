@@ -2,15 +2,21 @@
 	-fx-qgu-table-row-height: 25px;
 }
 
-.qgu-task-list {
+.qgu-task-list, .qgu-task-id {
 	-fx-padding: 0 0 0 0;
 }
 
-.qgu-task-list .tree-table-row-cell {
+.qgu-task-list .tree-disclosure-node .arrow {
+	/*visibility: hidden;*/
+}
+
+.qgu-task-list .tree-table-row-cell,
+.qgu-task-id .table-row-cell {
 	-fx-cell-size: -fx-qgu-table-row-height;
 }
 
-.qgu-task-list .tree-table-row-cell:odd {
+.qgu-task-list .tree-table-row-cell:odd,
+.qgu-task-id .table-row-cell:odd {
 	-fx-background: -fx-control-inner-background-alt;
 }
 
