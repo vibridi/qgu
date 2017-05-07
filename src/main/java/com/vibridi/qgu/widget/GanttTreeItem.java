@@ -16,7 +16,6 @@ public class GanttTreeItem extends TreeItem<ObservableGanttTask> {
 	public GanttTreeItem(ObservableGanttTask taskItem) {
 		super(taskItem);
 		this.task = taskItem.getTask();
-		
 		setExpanded(true);
 	}
 	

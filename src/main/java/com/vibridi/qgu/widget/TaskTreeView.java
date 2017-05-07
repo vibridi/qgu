@@ -2,7 +2,10 @@ package com.vibridi.qgu.widget;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.vibridi.fxu.dialog.FXDialog;
@@ -11,9 +14,7 @@ import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
 import com.vibridi.qgu.widget.api.TaskTreeWalkerCallback;
 
-import javafx.collections.ListChangeListener;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
@@ -27,8 +28,8 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	private final TreeTableColumn<ObservableGanttTask, String> endDate;
 	
 	private List<TaskListener> taskLsnr; // TODO possibly not needed
-	
-	//private Map<String,GanttTask> TODO add something for computing the absolute index of the task
+	private TreeSet<String> absoluteList; // TODO NEXT: this is not updated across objects. 
+	private Map<String,GanttTask> taskMap;
 		
 	public TaskTreeView() {
 		itemRoot = new GanttTreeItem(new ObservableGanttTask(new GanttTask("root"))); 
@@ -73,8 +74,12 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		getColumns().add(title);
 		
 		taskLsnr = new ArrayList<>();
+		absoluteList = new TreeSet<>();
+		taskMap = new HashMap<>();
 	}
 	
+	
+	// TODO possibly not needed any more
 	private TaskToolbarCell createTaskCell(TreeTableColumn<ObservableGanttTask, String> parent) {
 		TaskToolbarCell taskCell = new TaskToolbarCell();
 		taskCell.setOnAddChild(this::onAddChild);
@@ -83,36 +88,42 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		return taskCell;
 	}
 	
+	// TODO not needed any more
 	public void addTaskListener(TaskListener lsnr) {
 		taskLsnr.add(lsnr);
 	}
 	
 	/**
 	 * Adds an empty task to the root node
-	 * 
+	 * @return The absolute index of the new task in the task list
 	 */
-	public void addTask() {		
-		itemRoot.addChild(new GanttTreeItem(new GanttTask("New Task " + itemRoot.size())));
+	public int addTask() {
+		GanttTask task = new GanttTask("New Task " + itemRoot.size());
+		itemRoot.addChild(new GanttTreeItem(task));
+		return makeInternalRepresentation(task);
 	}
 	
 	/**
 	 * Adds an empty task as child of a specific item in the task tree
 	 * 
 	 * @param path
+	 * @return The absolute index of the new task in the task list
 	 */
-	public void addTask(int... path) {
-		itemRoot.addChild(new GanttTreeItem(new GanttTask("New Task")), path);
+	public int addTask(int... path) {
+		GanttTask task = new GanttTask("New Task");
+		itemRoot.addChild(new GanttTreeItem(task), path);
+		return makeInternalRepresentation(task);
 	}
 	
 	/**
 	 * Adds an existing task to the root node
 	 * 
 	 * @param task
+	 * @return The absolute index of the new task in the task list
 	 */
-	public void addTask(GanttTask task) {
-		GanttTreeItem item = new GanttTreeItem(task);
-		itemRoot.addChild(item);
-		//this.getRow(item);
+	public int addTask(GanttTask task) {
+		itemRoot.addChild(new GanttTreeItem(task));
+		return makeInternalRepresentation(task);
 	}
 	
 	/**
@@ -120,28 +131,19 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	 * 
 	 * @param task
 	 * @param path
+	 * @return The absolute index of the new task in the task list
 	 */
-	public void addTask(GanttTask task, int... path) {
+	public int addTask(GanttTask task, int... path) {
 		itemRoot.addChild(new GanttTreeItem(task), path);
+		return makeInternalRepresentation(task);
 	}
 	
-	
-	public void addTaskTree(GanttTask root) {
-		itemRoot.clear();
-		AtomicInteger index = new AtomicInteger(0);
-		TaskUtils.walkDepthFirst(root, node -> {
-			if(node.getPath().length == 0)
-				return;
-			GanttTask task = node.clone();
-			itemRoot.addChild(new GanttTreeItem(task), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-			
-			if(!task.isRoot())
-				fireAddEvent(index.getAndIncrement(), task);
-		});
-	}
-	
-	public GanttTreeItem removeTask(int... path) {
-		return itemRoot.removeChild(path);
+	public void removeTask(int... path) {
+		removeInternalRepresentation();
+//		String sPath = TaskUtils.pathToString(path);
+//		if(!absoluteList.contains(sPath))
+//			return null;
+		itemRoot.removeChild(path);	// since this path comes from an actual item in the list, it must always exist
 	}
 	
 	public GanttTask getGanttRoot() {
@@ -159,6 +161,32 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 	/* ******************
 	 * PRIVATE METHODS
 	 * ******************/
+	private int makeInternalRepresentation(GanttTask task) {
+		String sPath = TaskUtils.pathToString(task.getPath());
+		absoluteList.add(sPath);
+		taskMap.put(sPath, task);
+		return absoluteIndex(sPath);
+	}
+	
+	private void removeInternalRepresentation() {
+		
+	}
+	
+	private int absoluteIndex(GanttTask task) {
+		return absoluteIndex(TaskUtils.pathToString(task.getPath()));
+		
+	}
+	
+	private int absoluteIndex(int[] path) {
+		return absoluteIndex(TaskUtils.pathToString(path));
+	}
+	
+	private int absoluteIndex(String sPath) {
+		if(taskMap.get(sPath) == null)
+			return -1;
+		return absoluteList.headSet(sPath).size();
+	}
+	
 	private void fireAddEvent(int absoluteIndex, GanttTask task) {
 		taskLsnr.forEach(lsnr -> lsnr.taskAddedEvent(absoluteIndex, task));
 	}
@@ -185,6 +213,7 @@ public class TaskTreeView extends TreeTableView<ObservableGanttTask> {
 		System.out.print(task.getTask().getName() + " path:\t");
 		TaskUtils.printPath(task.getTask().getPath());
 		return true;
-	}
+	}	
+	
 	
 }

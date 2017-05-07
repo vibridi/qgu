@@ -5,6 +5,7 @@ import java.time.Month;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.vibridi.fxu.FXUtils;
 import com.vibridi.fxu.dialog.FXDialog;
 import com.vibridi.fxu.input.FormattableDatePicker;
 import com.vibridi.fxu.keyboard.FXKeyboard;
@@ -34,7 +35,8 @@ public class GanttChart {
 	private static final String TASK_DATE_FORMAT = "yyyy-MM-dd";
 	
 	private TableView<String> taskIdView;
-	private TaskTreeView taskView;
+	//private TaskTreeView taskView;
+	private TaskTableView taskView;
 	private TableView<GanttTask> timelineView;
 
 	private ToolBar taskViewToolBar;
@@ -55,20 +57,24 @@ public class GanttChart {
 	}
 
 	public GanttChart() {
+		chartStartDate = LocalDate.now();
+		chartEndDate = LocalDate.now().plusDays(60);
+		
 		timelineView = new TableView<GanttTask>();
 		timelineView.getStyleClass().add("qgu-timeline");
 		timelineView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-		initTimeline(LocalDate.now(),LocalDate.now().plusDays(60));
+		initTimeline(chartStartDate, chartEndDate);
 		
 		timelineViewToolBar = new ToolBar();
 		initTimelineViewToolBar();
 		
-		taskIdView = new TableView<String>();
-		taskIdView.getStyleClass().add("qgu-task-id");
-		taskIdView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-		initTaskIdView();
+//		taskIdView = new TableView<String>();
+//		taskIdView.getStyleClass().add("qgu-task-id");
+//		taskIdView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+//		initTaskIdView();
 		
-		taskView = new TaskTreeView();
+		//taskView = new TaskTreeView();
+		taskView = new TaskTableView();
 		taskView.getStyleClass().add("qgu-task-list");
 		initTaskView();
 		
@@ -81,16 +87,16 @@ public class GanttChart {
 		AnchorPane.setRightAnchor(taskViewToolBar, 0.0);
 		AnchorPane.setLeftAnchor(taskViewToolBar, 0.0);
 		
-		AnchorPane.setTopAnchor(taskIdView, TOOLBAR_HEIGHT);
-		AnchorPane.setBottomAnchor(taskIdView, 0.0);
-		AnchorPane.setLeftAnchor(taskIdView, 0.0);
+//		AnchorPane.setTopAnchor(taskIdView, TOOLBAR_HEIGHT);
+//		AnchorPane.setBottomAnchor(taskIdView, 0.0);
+//		AnchorPane.setLeftAnchor(taskIdView, 0.0);
 		
 		AnchorPane.setTopAnchor(taskView, TOOLBAR_HEIGHT);
 		AnchorPane.setBottomAnchor(taskView, 0.0);
 		AnchorPane.setRightAnchor(taskView, 0.0);
-		AnchorPane.setLeftAnchor(taskView, TASK_ID_VIEW_WIDTH);
+		AnchorPane.setLeftAnchor(taskView, 0.0); //TASK_ID_VIEW_WIDTH);
 
-		parent.getChildren().addAll(taskViewToolBar, taskIdView, taskView);
+		parent.getChildren().addAll(taskViewToolBar, /*taskIdView,*/ taskView);
 	}
 
 	public void setTimelineViewParent(AnchorPane parent) {
@@ -119,13 +125,11 @@ public class GanttChart {
 		taskView.clearTaskTree();
 		AtomicInteger index = new AtomicInteger(0);
 		TaskUtils.walkDepthFirst(root, node -> {
-			if(node.getPath().length == 0)
+			if(node.isRoot())
 				return;
 			GanttTask task = node.clone();
 			taskView.addTask(task, Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-			
-			if(!task.isRoot())
-				propagateTask(index.getAndIncrement(), task);
+			propagateTask(index.getAndIncrement(), task);
 		});
 		
 	}
@@ -140,16 +144,18 @@ public class GanttChart {
 	}
 
 	public void resetTimeline(LocalDate start, LocalDate end) {
+		chartStartDate = start;
+		chartEndDate = end;
 		timelineView.getColumns().clear();
 		initTimeline(start,end);
 	}
 
-	public void addTask(GanttTask task) {
-		taskView.addTask(task);
+	public int addTask(GanttTask task) {
+		return taskView.addTask(task);
 	}
 
-	public void addTask(GanttTask task, int... path) {
-		taskView.addTask(task, path);
+	public int addTask(GanttTask task, int... path) {
+		return taskView.addTask(task, path);
 	}
 
 	
@@ -231,43 +237,44 @@ public class GanttChart {
 	private void initTaskViewToolBar() {
 		taskViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
 		
-		taskIdField = new TextField();
-		taskIdField.setPromptText("Id");
-		taskIdField.setPrefWidth(TASK_ID_VIEW_WIDTH - 5.0);
-		
-		taskNameField = new TextField();
-		taskNameField.setPromptText("Task name");
-		taskNameField.prefWidthProperty().bind(taskView.widthProperty().multiply(0.27));
-		
-		startPicker = new FormattableDatePicker(TASK_DATE_FORMAT); // TODO make this an option
-		startPicker.setPromptText("Start date");
-		startPicker.setShowWeekNumbers(false); // TODO make this option
-		startPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
-		
-		endPicker = new FormattableDatePicker(TASK_DATE_FORMAT);
-		endPicker.setPromptText("End date");
-		endPicker.setShowWeekNumbers(false);
-		endPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
-		
-		plus = new Button("+");
-		plus.setOnAction(event -> addTask());
-				
-		taskViewToolBar.getItems().addAll(taskIdField, taskNameField, startPicker, endPicker, plus);
+//		taskIdField = new TextField();
+//		taskIdField.setPromptText("Id");
+//		taskIdField.setPrefWidth(TASK_ID_VIEW_WIDTH - 5.0);
+//		
+//		taskNameField = new TextField();
+//		taskNameField.setPromptText("Task name");
+//		taskNameField.prefWidthProperty().bind(taskView.widthProperty().multiply(0.27));
+//		
+//		startPicker = new FormattableDatePicker(TASK_DATE_FORMAT); // TODO make this an option
+//		startPicker.setPromptText("Start date");
+//		startPicker.setShowWeekNumbers(false); // TODO make this option
+//		startPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
+//		
+//		endPicker = new FormattableDatePicker(TASK_DATE_FORMAT);
+//		endPicker.setPromptText("End date");
+//		endPicker.setShowWeekNumbers(false);
+//		endPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
+//		
+//		plus = new Button("+");
+//		plus.setOnAction(event -> addTask());
+//		FXUtils.setTooltip(plus, "Add task (Ctrl+Shift+N)");
+//				
+//		taskViewToolBar.getItems().addAll(taskIdField, taskNameField, startPicker, endPicker, plus);
 	}
 	
 	private void propagateTask(int absoluteIndex, GanttTask task) {
 		if(absoluteIndex > timelineView.getItems().size()) {
 			timelineView.getItems().add(task);
-			taskIdView.getItems().add(TaskUtils.pathToString(task.getPath()));
+			//taskIdView.getItems().add(TaskUtils.pathToString(task.getPath()));
 		} else {
 			timelineView.getItems().add(absoluteIndex, task);
-			taskIdView.getItems().add(absoluteIndex, TaskUtils.pathToString(task.getPath()));
+			//taskIdView.getItems().add(absoluteIndex, TaskUtils.pathToString(task.getPath()));
 		}
 	}
 	
 	private void removeTask() {	
 		int absoluteIndex = taskView.getSelectionModel().getSelectedIndex();
-		GanttTask removedTask = taskView.getSelectionModel().getSelectedItem().getValue().getTask();
+		GanttTask removedTask = taskView.getSelectionModel().getSelectedItem()/*.getValue()*/.getTask();
 		
 		if(removedTask.size() > 0) {
 			ButtonType type = FXDialog.binaryChoiceAlert("This will delete also all sub-tasks. Proceed?").showAndWait().get();
@@ -303,7 +310,7 @@ public class GanttChart {
 					throw new NestingLevelException("Tasks cannot be nested deeper than the 3rd level");
 				addTask(task, Arrays.copyOf(path, path.length - 1));
 			}
-			
+						
 		} catch(NumberFormatException e) {
 			FXDialog.errorAlert("Task ID is invalid", e).showAndWait();
 			return;

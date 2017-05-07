@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
+import com.vibridi.qgu.widget.GanttChart;
 import com.vibridi.qgu.widget.TaskTreeView;
 
 import javafx.application.Application;
@@ -118,10 +119,10 @@ public class MainTest {
 		List<String> benchmark = Files.readAllLines(Paths.get(this.getClass().getResource("/tasktree.txt").toURI())).stream()
 				.map(line -> line.trim()).collect(Collectors.toList());
 		
-		TaskTreeView view = new TaskTreeView();
-		view.addTaskTree(readTaskTree());
+		GanttChart gc = new GanttChart();
+		gc.setGantt(readTaskTree());
 		
-		List<String> test = view.getRoot().getValue().getTask().toFlatList().stream()
+		List<String> test = gc.getGanttRoot().toFlatList().stream()
 				.map(node -> node.getName()).collect(Collectors.toList());
 		
 		assertTrue(Arrays.equals(benchmark.toArray(), test.toArray()));
@@ -162,7 +163,18 @@ public class MainTest {
 		ObjectInputStream ios = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
 		
 		GanttTask deserialized = (GanttTask) ios.readObject();
-		TaskUtils.printTree(deserialized);
+		//TaskUtils.printTree(deserialized);
+		// TODO more meaningful assertions
+	}
+	
+	@Test
+	public void testAbsoluteIndex() throws IOException, URISyntaxException {		
+		GanttChart gc = new GanttChart();
+		gc.setGantt(readTaskTree());
+		
+		int index = gc.addTask(new GanttTask("New"));
+		System.out.println(index);
+		//assertTrue(index == 5);
 	}
 	
 	private GanttTask readTaskTree() throws IOException, URISyntaxException {
@@ -185,7 +197,35 @@ public class MainTest {
         return root;
 	}
 	
-	
+	@Test
+	public void testRemoveChildTEMP() throws IOException, URISyntaxException {
+		GanttTask root = readTaskTree();
+		
+		TaskUtils.printTree(root);
+		System.out.println("-----------------------------------");
+		
+		GanttTask item1 = root.removeChild(1);
+		
+		TaskUtils.printTree(root);
+		System.out.println("-----------------------------------");
+
+		
+		assertTrue(item1.comparePathTo(new int[] {1}));
+		assertTrue(!root.getChild(1).equals(item1)); 
+		assertTrue(root.getChild(1).comparePathTo(new int[] {1}));
+		assertTrue(root.getChild(2,1,0).getName().equals("item310"));
+		
+		GanttTask item01 = root.removeChild(0,1);
+		
+		TaskUtils.printTree(root);
+		System.out.println("-----------------------------------");
+
+		
+		assertTrue(item01.comparePathTo(new int[] {0,1}));
+		assertTrue(!root.getChild(0,1).equals(item01)); 
+		assertTrue(root.getChild(0,1).comparePathTo(new int[] {0,1}));
+		assertTrue(root.getChild(0,1,0).getName().equals("item020"));
+	}
 	
 //	public String getResource(String resource) {
 //		Files.readAllLines(Paths.get("/tasktree.txt"));

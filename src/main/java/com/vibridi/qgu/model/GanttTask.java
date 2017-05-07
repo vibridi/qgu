@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vibridi.qgu.util.TaskUtils;
+import com.vibridi.qgu.widget.GanttTreeItem;
 
 public class GanttTask implements Cloneable, Serializable {
 	private static final long serialVersionUID = 4669501028180213212L;
@@ -65,6 +66,9 @@ public class GanttTask implements Cloneable, Serializable {
 		
 		if(!this.endDate.isEqual(that.endDate))
 			return false;
+		
+//		if(!(this.level == that.level))
+//			return false;
 		
 		return true;
 	}
@@ -146,6 +150,19 @@ public class GanttTask implements Cloneable, Serializable {
 		task.path = Arrays.copyOf(path, level + 1);
 		task.path[task.level-1] = children.size();
 		children.add(task);
+	}
+	
+	
+	public void addChild(GanttTask task, int[] path) {
+		GanttTask parent = this;
+		for(int i = 0; i < path.length; i++) {
+			parent = parent.children.get(path[i]);
+		}
+		parent.addChild(task);
+	}
+	
+	public void insertChild(GanttTask task, int[] path) {
+		
 	}
 	
 	public GanttTask getChild(int... path) {

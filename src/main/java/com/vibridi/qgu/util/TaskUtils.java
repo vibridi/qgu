@@ -75,6 +75,14 @@ public class TaskUtils {
 		return Arrays.stream(path.split("\\.")).mapToInt(Integer::parseInt).toArray();
 	}
 	
+	public static int comparePath(int[] path1, int[] path2) {
+		return comparePath(pathToString(path1), pathToString(path2));
+	}
+	
+	public static int comparePath(String path1, String path2) {
+		return path1.compareTo(path2);
+	}
+	
 	public static GanttTask randomTask() {
 		int year = LocalDate.now().getYear();
 		return randomTask(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
