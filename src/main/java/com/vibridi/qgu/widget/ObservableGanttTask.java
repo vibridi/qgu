@@ -19,7 +19,7 @@ public class ObservableGanttTask {
 	
 	public ObservableGanttTask(GanttTask task) {
 		this.task = task;
-		this.id = new SimpleStringProperty(TaskUtils.pathToString(task.getPath()));
+		this.id = new SimpleStringProperty(indentation(task.getLevel()) + TaskUtils.pathToString(task.getPath()));
 		this.name = new SimpleStringProperty(indentation(task.getLevel()) + task.getName());
 		this.startDate = new SimpleStringProperty(task.getStartDate().toString()); // TODO configure date format
 		this.endDate = new SimpleStringProperty(task.getEndDate().toString());

@@ -68,11 +68,6 @@ public class GanttChart {
 		timelineViewToolBar = new ToolBar();
 		initTimelineViewToolBar();
 		
-//		taskIdView = new TableView<String>();
-//		taskIdView.getStyleClass().add("qgu-task-id");
-//		taskIdView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-//		initTaskIdView();
-		
 		//taskView = new TaskTreeView();
 		taskView = new TaskTableView();
 		taskView.getStyleClass().add("qgu-task-list");
@@ -87,16 +82,12 @@ public class GanttChart {
 		AnchorPane.setRightAnchor(taskViewToolBar, 0.0);
 		AnchorPane.setLeftAnchor(taskViewToolBar, 0.0);
 		
-//		AnchorPane.setTopAnchor(taskIdView, TOOLBAR_HEIGHT);
-//		AnchorPane.setBottomAnchor(taskIdView, 0.0);
-//		AnchorPane.setLeftAnchor(taskIdView, 0.0);
-		
 		AnchorPane.setTopAnchor(taskView, TOOLBAR_HEIGHT);
 		AnchorPane.setBottomAnchor(taskView, 0.0);
 		AnchorPane.setRightAnchor(taskView, 0.0);
-		AnchorPane.setLeftAnchor(taskView, 0.0); //TASK_ID_VIEW_WIDTH);
+		AnchorPane.setLeftAnchor(taskView, 0.0);
 
-		parent.getChildren().addAll(taskViewToolBar, /*taskIdView,*/ taskView);
+		parent.getChildren().addAll(taskViewToolBar, taskView);
 	}
 
 	public void setTimelineViewParent(AnchorPane parent) {
@@ -118,18 +109,17 @@ public class GanttChart {
 		if(n1 instanceof ScrollBar && n2 instanceof ScrollBar)
 			((ScrollBar) n1).valueProperty().bindBidirectional(((ScrollBar) n2).valueProperty());
 		
-		FXKeyboard.setKeyCombinationShortcut(taskView.getScene().getRoot(), "Ctrl+Shift+N", event -> addTask());
+		
 	}
 
 	public void setGantt(GanttTask root) {		
 		taskView.clearTaskTree();
-		AtomicInteger index = new AtomicInteger(0);
 		TaskUtils.walkDepthFirst(root, node -> {
 			if(node.isRoot())
 				return;
 			GanttTask task = node.clone();
-			taskView.addTask(task, Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-			propagateTask(index.getAndIncrement(), task);
+			int index = taskView.addTask(task, Arrays.copyOf(node.getPath(), node.getPath().length - 1));
+			propagateTask(index, task);
 		});
 		
 	}
@@ -199,20 +189,14 @@ public class GanttChart {
 
 			@Override
 			public void taskAddedEvent(int taskAbsoluteRow, GanttTask task) {
-				if(taskAbsoluteRow > timelineView.getItems().size())
-					timelineView.getItems().add(task);
-				else
-					timelineView.getItems().add(taskAbsoluteRow, task);
+				propagateTask(taskAbsoluteRow, task);
 			}
 
 			@Override
 			public void taskRemovedEvent(int taskAbsoluteRow, GanttTask task) {
-				System.out.println("Task removed. Fired from TaskTreeView"); // TODO this is not used anymore
-				//timelineView.getItems().remove(taskAbsoluteRow);
+				propagateRemove(taskAbsoluteRow, task);
 			}
 		});
-		
-		FXKeyboard.setKeyCombinationShortcut(taskView, "Ctrl+Backspace", event -> removeTask());
 	}
 	
 	private void initTaskIdView() {
@@ -265,16 +249,18 @@ public class GanttChart {
 	private void propagateTask(int absoluteIndex, GanttTask task) {
 		if(absoluteIndex > timelineView.getItems().size()) {
 			timelineView.getItems().add(task);
-			//taskIdView.getItems().add(TaskUtils.pathToString(task.getPath()));
 		} else {
 			timelineView.getItems().add(absoluteIndex, task);
-			//taskIdView.getItems().add(absoluteIndex, TaskUtils.pathToString(task.getPath()));
 		}
+	}
+	
+	private void propagateRemove(int absoluteIndex, GanttTask task) {
+		timelineView.getItems().remove(absoluteIndex);
 	}
 	
 	private void removeTask() {	
 		int absoluteIndex = taskView.getSelectionModel().getSelectedIndex();
-		GanttTask removedTask = taskView.getSelectionModel().getSelectedItem()/*.getValue()*/.getTask();
+		GanttTask removedTask = taskView.getSelectionModel().getSelectedItem().getTask();
 		
 		if(removedTask.size() > 0) {
 			ButtonType type = FXDialog.binaryChoiceAlert("This will delete also all sub-tasks. Proceed?").showAndWait().get();
@@ -283,8 +269,7 @@ public class GanttChart {
 		}
 		
 		taskView.removeTask(removedTask.getPath());
-		taskIdView.getItems().remove(absoluteIndex);
-		timelineView.getItems().remove(absoluteIndex);
+		
 	}
 	
 	private void addTask() {
