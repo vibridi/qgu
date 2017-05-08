@@ -133,15 +133,15 @@ public class MainTest {
 		GanttTask root = readTaskTree();
 		GanttTask item1 = root.removeChild(1);
 		
-		assertTrue(item1.comparePathTo(new int[] {1}));
+		assertTrue(item1.pathEquals(new int[] {1}));
 		assertTrue(!root.getChild(1).equals(item1)); 
-		assertTrue(root.getChild(1).comparePathTo(new int[] {1}));
+		assertTrue(root.getChild(1).pathEquals(new int[] {1}));
 		assertTrue(root.getChild(2,1,0).getName().equals("item310"));
 		
 		GanttTask item01 = root.removeChild(0,1);
-		assertTrue(item01.comparePathTo(new int[] {0,1}));
+		assertTrue(item01.pathEquals(new int[] {0,1}));
 		assertTrue(!root.getChild(0,1).equals(item01)); 
-		assertTrue(root.getChild(0,1).comparePathTo(new int[] {0,1}));
+		assertTrue(root.getChild(0,1).pathEquals(new int[] {0,1}));
 		assertTrue(root.getChild(0,1,0).getName().equals("item020"));
 	}
 	
@@ -210,9 +210,9 @@ public class MainTest {
 		System.out.println("-----------------------------------");
 
 		
-		assertTrue(item1.comparePathTo(new int[] {1}));
+		assertTrue(item1.pathEquals(new int[] {1}));
 		assertTrue(!root.getChild(1).equals(item1)); 
-		assertTrue(root.getChild(1).comparePathTo(new int[] {1}));
+		assertTrue(root.getChild(1).pathEquals(new int[] {1}));
 		assertTrue(root.getChild(2,1,0).getName().equals("item310"));
 		
 		GanttTask item01 = root.removeChild(0,1);
@@ -221,9 +221,9 @@ public class MainTest {
 		System.out.println("-----------------------------------");
 
 		
-		assertTrue(item01.comparePathTo(new int[] {0,1}));
+		assertTrue(item01.pathEquals(new int[] {0,1}));
 		assertTrue(!root.getChild(0,1).equals(item01)); 
-		assertTrue(root.getChild(0,1).comparePathTo(new int[] {0,1}));
+		assertTrue(root.getChild(0,1).pathEquals(new int[] {0,1}));
 		assertTrue(root.getChild(0,1,0).getName().equals("item020"));
 	}
 	

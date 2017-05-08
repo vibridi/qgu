@@ -122,8 +122,12 @@ public class GanttTask implements Cloneable, Serializable {
 		return path;
 	}
 	
-	public boolean comparePathTo(int[] that) {
+	public boolean pathEquals(int[] that) {
 		return Arrays.equals(this.path, that);
+	}
+	
+	public int comparePath(int[] that) {
+		return TaskUtils.pathToString(this.path).compareTo(TaskUtils.pathToString(that));
 	}
 	
 	/**
@@ -162,7 +166,7 @@ public class GanttTask implements Cloneable, Serializable {
 	}
 	
 	public void insertChild(GanttTask task, int[] path) {
-		
+		// TODO really needed?
 	}
 	
 	public GanttTask getChild(int... path) {
@@ -187,10 +191,10 @@ public class GanttTask implements Cloneable, Serializable {
 		for(int i = 0; i < path.length - 1; i++)
 			task = task.getChild(path[i]);
 		
-		AtomicInteger taskLevel = new AtomicInteger(task.level);				// store level of current node
+		final int taskLevel = task.level;				
 		for(int i = path[path.length - 1] + 1; i < task.children.size(); i++) { // cycle over siblings starting from the next one
 			TaskUtils.walkDepthFirst(task.children.get(i), node -> {			// walk subtrees starting from siblings
-				node.path[taskLevel.get()]--;
+				node.path[taskLevel]--;
 			});
 		}
 		

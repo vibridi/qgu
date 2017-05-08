@@ -1,74 +1,42 @@
+ /********************
+ 	 GENERIC STYLE
+ *********************/
 * {
 	-fx-qgu-table-row-height: 25px;
 }
 
-.qgu-task-list, .qgu-task-id {
-	-fx-padding: 0 0 0 0;
-}
 
-.qgu-task-list .tree-disclosure-node .arrow {
-	/*visibility: hidden;*/
-}
+ /********************
+   GANTT CHART STYLE
+ *********************/
+.qgu-task-list,
+.qgu-timeline {
+	-fx-focus-color: transparent;
+} 
 
-.qgu-task-list .tree-table-row-cell,
-.qgu-task-id .table-row-cell {
+.qgu-task-list .table-row-cell,
+.qgu-timeline .table-row-cell {
+	-fx-border-width: 0px;
 	-fx-cell-size: -fx-qgu-table-row-height;
-}
-
-.qgu-task-list .tree-table-row-cell:odd,
-.qgu-task-id .table-row-cell:odd {
-	-fx-background: -fx-control-inner-background-alt;
-}
-
-.qgu-task-list .task-list-button {
-	-fx-padding: 2 5 2 5;
-	
-	-fx-font-family: sans-serif;
-	-fx-font-weight: bold;
-	-fx-font-size: 10;
-	
-	-fx-background-color: #eeeeee;
-	-fx-border-width: 1px;
-	-fx-border-color: #cccccc;
-	-fx-border-radius: 3px;
-	-fx-background-radius: 3px;
-}
-
-.qgu-task-list .task-list-button:hover {
-	-fx-background-color: #dddddd;
-}
-
-.qgu-task-list .task-list-button:pressed {
-	-fx-background-color: #cccccc;
-}
-
-/* GENERIC TABLE STYLE */
-.table-view,
-.table-view > * {
 	-fx-focus-color: transparent;
 }
 
-.table-view .column-header,
-.table-view .column-header .filler,
-.table-view .column-header-background .filler {
-	
-}
-
-.table-view .column-header-background .label { 
-    -fx-font-weight: normal;
-}
-
-.table-view .table-row-cell {
-	-fx-border-width: 0px;
-}
-
-.table-view .table-row-cell:selected {
-	-fx-border-width: 0px;
+.qgu-task-list .table-row-cell:selected,
+.qgu-timeline .table-row-cell:selected {
 	-fx-background-color: transparent;
-	-fx-table-cell-border-color: transparent;
-    -fx-background-insets: 0;
-    -fx-background-radius: 1;
 }
+
+.qgu-task-list .column-header-background .label,
+.qgu-timeline .column-header-background .label {
+	-fx-font-weight: normal;
+}
+
+/*
+.qgu-task-list .table-row-cell:odd {
+	-fx-background: -fx-control-inner-background-alt;
+}
+*/
+
 
 /* QGU TIMELINE STYLE */
 .qgu-timeline {
@@ -81,8 +49,11 @@
 	-fx-border-width: 0px;
 }
 
-.qgu-timeline .table-row-cell {
-	-fx-cell-size: -fx-qgu-table-row-height;
+.qgu-timeline .table-row-cell:selected {
+	-fx-border-width: 0px;
+	-fx-table-cell-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 1;
 }
 
 .gantt-piece-beginning {	

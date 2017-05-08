@@ -9,7 +9,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 
-public class ObservableGanttTask {
+public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 
 	private GanttTask task;
 	private StringProperty id;
@@ -25,6 +25,20 @@ public class ObservableGanttTask {
 		this.endDate = new SimpleStringProperty(task.getEndDate().toString());
 	}
 	
+	@Override 
+	public boolean equals(Object o) {
+		if(!(o instanceof ObservableGanttTask))
+			return false;
+		
+		ObservableGanttTask that = (ObservableGanttTask) o;
+		return this.task.comparePath(that.task.getPath()) == 0;
+	}
+	
+	@Override
+	public int compareTo(ObservableGanttTask that) {
+		return this.task.comparePath(that.task.getPath());
+	}
+	
 	public GanttTask getTask() {
 		return task;
 	}
@@ -33,37 +47,25 @@ public class ObservableGanttTask {
 		this.task = task;
 	}
 
-
-
 	public StringProperty nameProperty() {
 		return this.name;
 	}
-	
-
 
 	public String getName() {
 		return this.nameProperty().get();
 	}
-	
-
 
 	public void setName(final String name) {
 		this.nameProperty().set(name);
 	}
-	
-
 
 	public StringProperty startDateProperty() {
 		return this.startDate;
 	}
-	
-
 
 	public String getStartDate() {
 		return this.startDateProperty().get();
 	}
-	
-
 
 	public void setStartDate(final String startDate) {
 		this.startDateProperty().set(startDate);
@@ -96,6 +98,5 @@ public class ObservableGanttTask {
 	private String indentation(int level) {
 		return String.join("", Collections.nCopies(level-1, "  "));
 	}
-	
 	
 }
