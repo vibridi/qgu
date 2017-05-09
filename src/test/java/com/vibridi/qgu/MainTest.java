@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.BeforeClass;
@@ -219,7 +221,6 @@ public class MainTest {
 		
 		TaskUtils.printTree(root);
 		System.out.println("-----------------------------------");
-
 		
 		assertTrue(item01.pathEquals(new int[] {0,1}));
 		assertTrue(!root.getChild(0,1).equals(item01)); 

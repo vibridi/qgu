@@ -31,14 +31,26 @@
 	-fx-font-weight: normal;
 }
 
-/*
-.qgu-task-list .table-row-cell:odd {
-	-fx-background: -fx-control-inner-background-alt;
+
+ /********************
+   	TASK LIST STYLE
+ *********************/
+.qgu-task-list .table-row-cell:hover {
+	-fx-background-color: #dad5d0;
 }
-*/
+
+.qgu-task-list .table-row-cell:selected {
+	-fx-background-color: #beb9b5;
+	-fx-table-cell-border-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 1;
+}
 
 
-/* QGU TIMELINE STYLE */
+
+ /********************
+	 TIMELINE STYLE
+ *********************/
 .qgu-timeline {
 	-fx-table-cell-border-color: transparent;
 	-fx-table-cell-border-width: 0px;
