@@ -12,7 +12,7 @@
 	<properties>
 		<junit.version>4.12</junit.version>
 		<poi.version>3.15</poi.version>
-		<fxu.version>2.0.3-SNAPSHOT</fxu.version>
+		<fxu.version>2.0.5-SNAPSHOT</fxu.version>
 	</properties>
 
 	<dependencies>

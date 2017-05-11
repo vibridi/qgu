@@ -42,6 +42,10 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 	public GanttTask getTask() {
 		return task;
 	}
+	
+	public int getTaskLevel() {
+		return task.getLevel();
+	}
 
 	public void setTask(GanttTask task) {
 		this.task = task;
@@ -93,6 +97,10 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 
 	public void setId(final String id) {
 		this.idProperty().set(id);
+	}
+	
+	public void updateId() {
+		this.idProperty().set(indentation(task.getLevel()) + TaskUtils.pathToString(task.getPath()));
 	}
 	
 	private String indentation(int level) {

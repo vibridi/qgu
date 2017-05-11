@@ -32,7 +32,7 @@ public class GanttChart {
 
 	private static final double TASK_ID_VIEW_WIDTH = 50.0;
 	private static final double TOOLBAR_HEIGHT = 40.0;
-	private static final String TASK_DATE_FORMAT = "yyyy-MM-dd";
+	private static final String TASK_DATE_FORMAT = "yyyy-MM-dd"; // TODO put this in some global property
 	
 	private TableView<String> taskIdView;
 	//private TaskTreeView taskView;
@@ -69,7 +69,7 @@ public class GanttChart {
 		initTimelineViewToolBar();
 		
 		//taskView = new TaskTreeView();
-		taskView = new TaskTableView();
+		taskView = new TaskTableView(TASK_DATE_FORMAT);
 		taskView.getStyleClass().add("qgu-task-list");
 		initTaskView();
 		
@@ -193,8 +193,8 @@ public class GanttChart {
 			}
 
 			@Override
-			public void taskRemovedEvent(int taskAbsoluteRow, GanttTask task) {
-				propagateRemove(taskAbsoluteRow, task);
+			public void taskRemovedEvent(int taskAbsoluteRow) {
+				propagateRemove(taskAbsoluteRow);
 			}
 		});
 	}
@@ -254,7 +254,7 @@ public class GanttChart {
 		}
 	}
 	
-	private void propagateRemove(int absoluteIndex, GanttTask task) {
+	private void propagateRemove(int absoluteIndex) {
 		timelineView.getItems().remove(absoluteIndex);
 	}
 	

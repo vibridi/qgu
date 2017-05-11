@@ -12,9 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.BeforeClass;
@@ -23,7 +21,7 @@ import org.junit.Test;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.GanttChart;
-import com.vibridi.qgu.widget.TaskTreeView;
+import com.vibridi.qgu.widget.TaskTableView;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -85,7 +83,7 @@ public class MainTest {
 	
 	@Test
 	public void testWalkTaskTree() {
-		TaskTreeView view = new TaskTreeView();
+		TaskTableView view = new TaskTableView();
 		view.addTask(new GanttTask("A"));
 		view.addTask(new GanttTask("B"));
 		view.addTask(new GanttTask("A.1"), 0);
@@ -175,8 +173,7 @@ public class MainTest {
 		gc.setGantt(readTaskTree());
 		
 		int index = gc.addTask(new GanttTask("New"));
-		System.out.println(index);
-		//assertTrue(index == 5);
+		assertTrue(index == 14);
 	}
 	
 	private GanttTask readTaskTree() throws IOException, URISyntaxException {
@@ -199,7 +196,7 @@ public class MainTest {
         return root;
 	}
 	
-	@Test
+	//@Test
 	public void testRemoveChildTEMP() throws IOException, URISyntaxException {
 		GanttTask root = readTaskTree();
 		

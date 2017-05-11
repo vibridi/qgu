@@ -1,24 +1,32 @@
 package com.vibridi.qgu.widget;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
 
 import com.vibridi.fxu.dialog.FXDialog;
+import com.vibridi.fxu.input.DatePickerTableCell;
 import com.vibridi.fxu.keyboard.FXKeyboard;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
-import com.vibridi.qgu.widget.api.TaskTreeWalkerCallback;
+import com.vibridi.qgu.widget.api.TaskVisitor;
 
-import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.TextFieldTableCell;
 
 public class TaskTableView extends TableView<ObservableGanttTask> {
+	
+	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd";
+	private final static String NEW_CHILD_KEY_SHORTCUT = "Ctrl+Shift+N";
+	private final static String NEW_SIBLING_KEY_SHORTCUT = "Ctrl+Alt+N";
+	private final static String DELETE_KEY_SHORTCUT = "Ctrl+Backspace";
 	
 	private final GanttTask listRoot;
 	private final TableColumn<ObservableGanttTask, String> title;
@@ -30,16 +38,21 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 	private TaskListener taskListener;
 	private TreeSet<ObservableGanttTask> absoluteList;
 	
-	public TaskTableView() {		
+	public TaskTableView() {
+		this(DEFAULT_DATE_FORMAT);
+	}
+	
+	public TaskTableView(String datePattern) {		
 		listRoot = new GanttTask("root");
 		
 		setEditable(true);
+		setRowFactory(this::tableRowFactory);
 		
 		title = new TableColumn<ObservableGanttTask,String>("Task List");
 		
 		taskId = new TableColumn<ObservableGanttTask,String>("Id");
 		taskId.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-		taskId.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn());
+		//taskId.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn()); // TODO make this editable?
 		taskId.setSortable(false);
 		
 		taskName = new TableColumn<ObservableGanttTask,String>("Task");
@@ -49,12 +62,13 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		
 		startDate = new TableColumn<ObservableGanttTask,String>("Start");
 		startDate.setCellValueFactory(cellData -> cellData.getValue().startDateProperty());
-		startDate.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn());
+		startDate.setCellFactory(DatePickerTableCell.<ObservableGanttTask>forTableColumn(datePattern));
+		startDate.setOnEditCommit(event -> { System.out.println(event.getNewValue()); }); // TODO 
 		startDate.setSortable(false);
 		
 		endDate = new TableColumn<ObservableGanttTask,String>("End");
 		endDate.setCellValueFactory(cellData -> cellData.getValue().endDateProperty());
-		endDate.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn());
+		endDate.setCellFactory(DatePickerTableCell.<ObservableGanttTask>forTableColumn(datePattern));
 		endDate.setSortable(false);
 		
 		title.getColumns().add(taskId);
@@ -72,9 +86,9 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 
 		absoluteList = new TreeSet<>();
 		
-		FXKeyboard.setKeyCombinationShortcut(this, "Ctrl+Shift+N", event -> shortcutAddChild());
-		FXKeyboard.setKeyCombinationShortcut(this, "Ctrl+Alt+N", event -> shortcutAddSibling());
-		FXKeyboard.setKeyCombinationShortcut(this, "Ctrl+Backspace", event -> shortcutDelete());
+		FXKeyboard.setKeyCombinationShortcut(this, NEW_CHILD_KEY_SHORTCUT, event -> shortcutAddChild());
+		FXKeyboard.setKeyCombinationShortcut(this, NEW_SIBLING_KEY_SHORTCUT, event -> shortcutAddSibling());
+		FXKeyboard.setKeyCombinationShortcut(this, DELETE_KEY_SHORTCUT, event -> shortcutDelete());
 //		FXKeyboard.setKeyCombinationShortcut(this, "Ctrl+Shift+I", event -> );
 	}
 	
@@ -111,17 +125,38 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		return i;
 	}
 	
-	public void removeTask(int at) { // TODO consider returning task
+	/**
+	 * Removes the task at the specified position from the list. It also removes this task's children.
+	 *  
+	 * @param at Index of the task that will be removed
+	 * @return Number of items removed from the list
+	 */
+	public int removeTask(int at) {
+		
+		// remove item at the specified position
 		ObservableGanttTask obs = getItems().remove(at);
 		removeInternalRepresentation(obs);
 		listRoot.removeChild(obs.getTask().getPath());
+		
+		int lv = obs.getTaskLevel();
+		int howManyRemoved = 1;
+		
+		// remove children
+		for(; at < getItems().size() && getItems().get(at).getTaskLevel() > lv; howManyRemoved++)
+			removeInternalRepresentation(getItems().remove(at));
+		
+		// update siblings and nephews
+		for(int i = at; i < getItems().size() && getItems().get(i).getTaskLevel() >= lv; i++)
+			getItems().get(i).updateId();
+		
+		return howManyRemoved;
 	}
 	
 	public GanttTask getGanttRoot() {
 		return listRoot;
 	}
 	
-	public void walkDepthFirst(TaskTreeWalkerCallback callback) {
+	public void walkDepthFirst(TaskVisitor callback) {
 		TaskUtils.walkDepthFirst(listRoot, callback);
 	}
 	
@@ -132,6 +167,32 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 	/* ******************
 	 * PRIVATE METHODS
 	 * ******************/
+	private TableRow<ObservableGanttTask> tableRowFactory(TableView<ObservableGanttTask> table) {
+		final TableRow<ObservableGanttTask> row = new TableRow<>();
+	    final ContextMenu rowMenu = new ContextMenu();
+	    
+	    MenuItem newChildItem = new MenuItem("New child task");
+	    newChildItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_CHILD_KEY_SHORTCUT));
+	    newChildItem.setOnAction(event -> shortcutAddChild());
+	    
+	    MenuItem newSiblingItem = new MenuItem("New sibling task");
+	    newSiblingItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_SIBLING_KEY_SHORTCUT));
+	    newSiblingItem.setOnAction(event -> shortcutAddSibling());
+	    
+	    MenuItem removeItem = new MenuItem("Delete task");
+	    removeItem.setAccelerator(FXKeyboard.buildKeyCombination(DELETE_KEY_SHORTCUT));
+	    removeItem.setOnAction(event -> shortcutDelete(row.getIndex(), row.getItem()));
+	    
+	    rowMenu.getItems().addAll(newChildItem, newSiblingItem, removeItem);
+
+	    // only display context menu for non-null items:
+	    row.contextMenuProperty().bind(
+	      Bindings.when(Bindings.isNotNull(row.itemProperty()))
+	      .then(rowMenu)
+	      .otherwise((ContextMenu) null));
+	    return row;
+	}
+	
 	private void shortcutAddChild() {
 		ObservableGanttTask obs = getSelectionModel().getSelectedItem();
 		if(obs == null)
@@ -159,8 +220,15 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 	}
 	
 	private void shortcutDelete() {
-		int index = getSelectionModel().getSelectedIndex();
-		ObservableGanttTask obs = getSelectionModel().getSelectedItem();
+		shortcutDelete(-1, null);
+	}
+	
+	private void shortcutDelete(int index, ObservableGanttTask obs) {
+		if(index == -1 || obs == null) {
+			index = getSelectionModel().getSelectedIndex();
+			obs = getSelectionModel().getSelectedItem();
+		}
+
 		if(obs == null)
 			return;
 		
@@ -170,8 +238,9 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 				return;
 		}
 		
-		removeTask(index);
-		taskListener.taskRemovedEvent(index, obs.getTask());
+		int numRemoved = removeTask(index);
+		final int readonlyIndex = index;
+		IntStream.range(0, numRemoved).forEach(i -> taskListener.taskRemovedEvent(readonlyIndex+i));
 	}
 	
 	private int makeInternalRepresentation(ObservableGanttTask obs) {
@@ -188,12 +257,11 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 			return -1;
 		return absoluteList.headSet(obs).size();
 	}
-
 	
-	private Boolean onDebug(Integer absoluteIndex, ObservableGanttTask task) {
-		System.out.print(task.getTask().getName() + " path:\t");
-		TaskUtils.printPath(task.getTask().getPath());
-		return true;
-	}
+//	private Boolean onDebug(Integer absoluteIndex, ObservableGanttTask task) {
+//		System.out.print(task.getTask().getName() + " path:\t");
+//		TaskUtils.printPath(task.getTask().getPath());
+//		return true;
+//	}
 
 }

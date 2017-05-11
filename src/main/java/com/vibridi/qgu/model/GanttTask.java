@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.vibridi.qgu.util.TaskUtils;
-import com.vibridi.qgu.widget.GanttTreeItem;
+import com.vibridi.qgu.widget.api.TaskVisitor;
 
 public class GanttTask implements Cloneable, Serializable {
 	private static final long serialVersionUID = 4669501028180213212L;
@@ -176,9 +175,13 @@ public class GanttTask implements Cloneable, Serializable {
 		return task;
 	}
 	
-	public GanttTask removeChild(GanttTask task) {
-		return removeChild(children.indexOf(task));
-	}
+//	public GanttTask removeChild(GanttTask task) {
+//		return removeChild(children.indexOf(task));
+//	}
+	
+//	public GanttTask removeChild(int[] path) {
+//		return removeChild(path, null);
+//	}
 	
 	/**
 	 * Removes the child task at the given path starting from this node. 

@@ -2,25 +2,18 @@ package com.vibridi.qgu.controller;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
 
 import com.vibridi.fxu.controller.BaseController;
 import com.vibridi.fxu.dialog.FXDialog;
 import com.vibridi.fxu.keyboard.FXKeyboard;
 import com.vibridi.qgu.Main;
 import com.vibridi.qgu.exception.UnreadableGanttFileException;
-import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.storage.QGUStorageManager;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.GanttChart;
-import com.vibridi.qgu.widget.TaskTreeView;
 
 import javafx.fxml.FXML;
-import javafx.scene.Node;
-import javafx.scene.control.ScrollBar;
-import javafx.scene.control.TableView;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.WindowEvent;
 
 public class QGUViewController extends BaseController {
@@ -53,7 +46,6 @@ public class QGUViewController extends BaseController {
 		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+S", event -> saveGantt());
 		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+Shift+S", event -> saveGanttAs());
 		
-		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+Shift+N", event -> toolbarNewItem());
 		//FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+T", event -> taskView.requestFocus());
 		
 	}

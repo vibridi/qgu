@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 
 import com.vibridi.qgu.Main;
 import com.vibridi.qgu.model.GanttTask;
-import com.vibridi.qgu.widget.api.TaskTreeWalkerCallback;
+import com.vibridi.qgu.widget.api.TaskVisitor;
 
 public class TaskUtils {
 
@@ -57,7 +57,7 @@ public class TaskUtils {
 		}
 	}
 
-	public static void walkDepthFirst(GanttTask node, TaskTreeWalkerCallback callback) {
+	public static void walkDepthFirst(GanttTask node, TaskVisitor callback) {
 
 		callback.processNode(node);
 		
