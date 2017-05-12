@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.widget.GanttBarPiece.PieceType;
 
-import javafx.beans.value.ObservableObjectValue;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 

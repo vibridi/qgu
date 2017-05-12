@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.vibridi.qgu.util.TaskUtils;
-import com.vibridi.qgu.widget.api.TaskVisitor;
 
 public class GanttTask implements Cloneable, Serializable {
 	private static final long serialVersionUID = 4669501028180213212L;

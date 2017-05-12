@@ -1,5 +1,6 @@
 package com.vibridi.qgu.widget;
 
+import java.time.LocalDate;
 import java.util.Collections;
 
 import com.vibridi.qgu.model.GanttTask;
@@ -21,7 +22,17 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 		this.task = task;
 		this.id = new SimpleStringProperty(indentation(task.getLevel()) + TaskUtils.pathToString(task.getPath()));
 		this.name = new SimpleStringProperty(indentation(task.getLevel()) + task.getName());
+		
+		name.addListener((a,b,c)-> {
+			System.out.println("Observable property NAME changed");
+		});
+		
 		this.startDate = new SimpleStringProperty(task.getStartDate().toString()); // TODO configure date format
+		
+		this.startDate.addListener((a,b,c) -> {
+			System.out.println("Observable property changed");
+		});
+		
 		this.endDate = new SimpleStringProperty(task.getEndDate().toString());
 	}
 	
@@ -51,6 +62,15 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 		this.task = task;
 	}
 
+	/*******************************************
+	 * 										   *
+	 * JAVA FX GETTERS/SETTERS                 *
+	 *                                         *
+	 *******************************************/
+	/**
+	 * Name property getter
+	 * @return name property
+	 */
 	public StringProperty nameProperty() {
 		return this.name;
 	}
@@ -60,7 +80,8 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 	}
 
 	public void setName(final String name) {
-		this.nameProperty().set(name);
+		this.nameProperty().set(indentation(task.getLevel()) + name);
+		this.task.setName(name);
 	}
 
 	public StringProperty startDateProperty() {
@@ -73,6 +94,7 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 
 	public void setStartDate(final String startDate) {
 		this.startDateProperty().set(startDate);
+		this.task.setStartDate(LocalDate.parse(startDate));
 	}
 
 	public StringProperty endDateProperty() {
@@ -85,6 +107,7 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 
 	public void setEndDate(final String endDate) {
 		this.endDateProperty().set(endDate);
+		this.task.setEndDate(LocalDate.parse(endDate)); // TODO make sure date is in ISO format or set DateTimeFormatter
 	}
 
 	public StringProperty idProperty() {

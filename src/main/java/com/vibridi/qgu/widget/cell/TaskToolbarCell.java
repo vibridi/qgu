@@ -3,7 +3,6 @@ package com.vibridi.qgu.widget.cell;
 import java.util.function.BiFunction;
 
 import com.vibridi.fxu.FXUtils;
-import com.vibridi.fxu.keyboard.FXKeyboard;
 import com.vibridi.qgu.widget.ObservableGanttTask;
 
 import javafx.scene.control.Button;

@@ -5,9 +5,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -49,7 +47,10 @@ public class TaskUtils {
 				GanttTask parent = root;
 				for(int i = 0; i < tab; i++)
 					parent = parent.getChild(parent.size() - 1);
-				parent.addChild(new GanttTask(line.trim()));
+				
+				GanttTask newTask = TaskUtils.randomTask(LocalDate.now(), LocalDate.now().plusDays(30));
+				newTask.setName(line.trim());
+				parent.addChild(newTask);
 			}
 			return root;
 		} catch(Throwable t) {

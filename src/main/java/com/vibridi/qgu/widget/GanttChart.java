@@ -3,48 +3,30 @@ package com.vibridi.qgu.widget;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import com.vibridi.fxu.FXUtils;
-import com.vibridi.fxu.dialog.FXDialog;
-import com.vibridi.fxu.input.FormattableDatePicker;
-import com.vibridi.fxu.keyboard.FXKeyboard;
-import com.vibridi.qgu.exception.NestingLevelException;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
 
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.AnchorPane;
 
-public class GanttChart {
+public class GanttChart implements TaskListener {
 
-	private static final double TASK_ID_VIEW_WIDTH = 50.0;
 	private static final double TOOLBAR_HEIGHT = 40.0;
 	private static final String TASK_DATE_FORMAT = "yyyy-MM-dd"; // TODO put this in some global property
 	
-	private TableView<String> taskIdView;
-	//private TaskTreeView taskView;
 	private TaskTableView taskView;
 	private TableView<GanttTask> timelineView;
 
 	private ToolBar taskViewToolBar;
-	private TextField taskIdField;
-	private TextField taskNameField;
-	private DatePicker startPicker;
-	private DatePicker endPicker;
-	private Button plus;
 	
 	private ToolBar timelineViewToolBar;
 	
@@ -119,7 +101,7 @@ public class GanttChart {
 				return;
 			GanttTask task = node.clone();
 			int index = taskView.addTask(task, Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-			propagateTask(index, task);
+			//taskAddedEvent(index, task);
 		});
 		
 	}
@@ -177,41 +159,10 @@ public class GanttChart {
 		timelineView.setItems(FXCollections.observableArrayList());
 
 		// TODO make timeline right-left scrollable with wheel on windows 
-		//		progressView.setOnScroll(event -> {
-		//			progressView.scrollToColumnIndex(progressView.getVisibleLeafColumns().size() + 1);
-		//			
-		//		});
-
 	}
 
 	private void initTaskView() {
-		taskView.addTaskListener(new TaskListener() { // TODO place in its own file?
-
-			@Override
-			public void taskAddedEvent(int taskAbsoluteRow, GanttTask task) {
-				propagateTask(taskAbsoluteRow, task);
-			}
-
-			@Override
-			public void taskRemovedEvent(int taskAbsoluteRow) {
-				propagateRemove(taskAbsoluteRow);
-			}
-		});
-	}
-	
-	private void initTaskIdView() {
-		taskIdView.setPrefWidth(TASK_ID_VIEW_WIDTH);
-		taskIdView.setEditable(false);
-		
-		TableColumn<String, String> dummy = new TableColumn<>("");
-		
-		TableColumn<String, String> taskIdCol = new TableColumn<>("Id");
-		taskIdCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()));
-		taskIdCol.setSortable(false);
-		
-		dummy.getColumns().add(taskIdCol);
-		taskIdView.getColumns().add(dummy);
-		
+		taskView.addTaskListener(this);
 	}
 	
 	private void initTimelineViewToolBar() {
@@ -220,42 +171,23 @@ public class GanttChart {
 	
 	private void initTaskViewToolBar() {
 		taskViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
+	}
+	
+	@Override
+	public void taskAddedEvent(int taskRowIndex, GanttTask task) {
+		timelineView.getItems().add(taskRowIndex, task);		
+	}
+
+	@Override
+	public void taskEditedEvent(int taskRowIndex, GanttTask task) {
 		
-//		taskIdField = new TextField();
-//		taskIdField.setPromptText("Id");
-//		taskIdField.setPrefWidth(TASK_ID_VIEW_WIDTH - 5.0);
-//		
-//		taskNameField = new TextField();
-//		taskNameField.setPromptText("Task name");
-//		taskNameField.prefWidthProperty().bind(taskView.widthProperty().multiply(0.27));
-//		
-//		startPicker = new FormattableDatePicker(TASK_DATE_FORMAT); // TODO make this an option
-//		startPicker.setPromptText("Start date");
-//		startPicker.setShowWeekNumbers(false); // TODO make this option
-//		startPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
-//		
-//		endPicker = new FormattableDatePicker(TASK_DATE_FORMAT);
-//		endPicker.setPromptText("End date");
-//		endPicker.setShowWeekNumbers(false);
-//		endPicker.prefWidthProperty().bind(taskView.widthProperty().multiply(0.3));
-//		
-//		plus = new Button("+");
-//		plus.setOnAction(event -> addTask());
-//		FXUtils.setTooltip(plus, "Add task (Ctrl+Shift+N)");
-//				
-//		taskViewToolBar.getItems().addAll(taskIdField, taskNameField, startPicker, endPicker, plus);
+		System.out.println(task.toString());
+		// TODO Auto-generated method stub
+		//timelineView.getItems().
 	}
-	
-	private void propagateTask(int absoluteIndex, GanttTask task) {
-		if(absoluteIndex > timelineView.getItems().size()) {
-			timelineView.getItems().add(task);
-		} else {
-			timelineView.getItems().add(absoluteIndex, task);
-		}
+
+	@Override
+	public void taskRemovedEvent(int taskRowIndex) {
+		timelineView.getItems().remove(taskRowIndex);
 	}
-	
-	private void propagateRemove(int absoluteIndex) {
-		timelineView.getItems().remove(absoluteIndex);
-	}
-	
 }
