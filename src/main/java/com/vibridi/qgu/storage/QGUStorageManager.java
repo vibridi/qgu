@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.dedalus.xml.exception.XMLException;
 import com.vibridi.qgu.exception.UnreadableGanttFileException;
+import com.vibridi.qgu.model.GanttMetadata;
 import com.vibridi.qgu.model.GanttTask;
 
 public enum QGUStorageManager {
@@ -29,14 +31,14 @@ public enum QGUStorageManager {
 		saved = false;
 	}
 
-	public void saveGantt(GanttTask root) throws IOException {
+	public void saveGantt(GanttMetadata meta, GanttTask root) throws IOException, XMLException {
 		// TODO consider adding delta-saving capability
 		assert(handle != null);
-		saveGantt(handle, root);
+		saveGantt(handle, meta, root);
 	}
 	
-	public void saveGantt(File handle, GanttTask root) throws IOException {
-		storage.saveTree(handle, root);
+	public void saveGantt(File handle, GanttMetadata meta, GanttTask root) throws IOException, XMLException {
+		storage.saveTree(handle, meta, root);
 		saved = true;
 	}
 	

@@ -4,7 +4,7 @@
 
 	<groupId>com.vibridi</groupId>
 	<artifactId>qgu</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.4.15-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>qgu</name>
@@ -12,7 +12,8 @@
 	<properties>
 		<junit.version>4.12</junit.version>
 		<poi.version>3.15</poi.version>
-		<fxu.version>2.0.6-SNAPSHOT</fxu.version>
+		<fxu.version>2.1.9-SNAPSHOT</fxu.version>
+		<xmltools.version>1.8-SNAPSHOT</xmltools.version>
 	</properties>
 
 	<dependencies>
@@ -33,6 +34,11 @@
 			<groupId>com.vibridi</groupId>
 			<artifactId>fxu</artifactId>
 			<version>${fxu.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.dedalus</groupId>
+			<artifactId>xmltools</artifactId>
+			<version>${xmltools.version}</version>
 		</dependency>
 	</dependencies>
 

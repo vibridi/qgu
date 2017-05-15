@@ -1,20 +1,19 @@
 package com.vibridi.qgu.widget;
 
 import java.time.LocalDate;
-import java.time.Month;
 import java.util.Arrays;
 
+import com.vibridi.fxu.input.EditableLabel;
+import com.vibridi.fxu.input.FXInput;
+import com.vibridi.qgu.model.GanttMetadata;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollBar;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.AnchorPane;
 
@@ -22,16 +21,19 @@ public class GanttChart implements TaskListener {
 
 	private static final double TOOLBAR_HEIGHT = 40.0;
 	private static final String TASK_DATE_FORMAT = "yyyy-MM-dd"; // TODO put this in some global property
+	private static final String GANTT_DEFAULT_NAME = "New Gantt";
 	
 	private TaskTableView taskView;
-	private TableView<GanttTask> timelineView;
-
-	private ToolBar taskViewToolBar;
+	private EditableLabel projectName;
 	
+	private TimelineView timelineView;
+	private DatePicker dpStart;
+	private DatePicker dpEnd;
+	
+	private ToolBar taskViewToolBar;
 	private ToolBar timelineViewToolBar;
 	
-	private LocalDate chartStartDate;
-	private LocalDate chartEndDate;
+	private GanttMetadata metadata;
 
 	public GanttChart(GanttTask root) {
 		this();
@@ -39,24 +41,21 @@ public class GanttChart implements TaskListener {
 	}
 
 	public GanttChart() {
-		chartStartDate = LocalDate.now();
-		chartEndDate = LocalDate.now().plusDays(60);
-		
-		timelineView = new TableView<GanttTask>();
-		timelineView.getStyleClass().add("qgu-timeline");
-		timelineView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-		initTimeline(chartStartDate, chartEndDate);
-		
+		timelineView = new TimelineView(LocalDate.now(), LocalDate.now().plusDays(60));
+
 		timelineViewToolBar = new ToolBar();
 		initTimelineViewToolBar();
 		
-		//taskView = new TaskTreeView();
 		taskView = new TaskTableView(TASK_DATE_FORMAT);
-		taskView.getStyleClass().add("qgu-task-list");
-		initTaskView();
+		taskView.addTaskListener(this);
 		
 		taskViewToolBar = new ToolBar();
 		initTaskViewToolBar();
+		
+		metadata = new GanttMetadata();
+		metadata.ganttNameProperty().bind(projectName.baseTextProperty());
+		metadata.chartStartDateProperty().bind(dpStart.valueProperty());
+		metadata.chartEndDateProperty().bind(dpEnd.valueProperty());
 	}
 
 	public void setTaskViewParent(AnchorPane parent) {
@@ -90,18 +89,19 @@ public class GanttChart implements TaskListener {
 		Node n2 = timelineView.lookup(".scroll-bar");
 		if(n1 instanceof ScrollBar && n2 instanceof ScrollBar)
 			((ScrollBar) n1).valueProperty().bindBidirectional(((ScrollBar) n2).valueProperty());
-		
-		
 	}
 
+	/*********************************************
+	 *                                           *
+	 * API METHODS			                     *
+	 *                                           *
+	 *********************************************/
 	public void setGantt(GanttTask root) {		
-		taskView.clearTaskTree();
+		taskView.clear();
 		TaskUtils.walkDepthFirst(root, node -> {
 			if(node.isRoot())
 				return;
-			GanttTask task = node.clone();
-			int index = taskView.addTask(task, Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-			//taskAddedEvent(index, task);
+			taskView.addTask(node.clone(), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
 		});
 		
 	}
@@ -109,18 +109,21 @@ public class GanttChart implements TaskListener {
 	public GanttTask getGanttRoot() {
 		return taskView.getGanttRoot();
 	}
+	
+	public GanttMetadata getMetadata() {
+		return metadata;
+	}
 
 	public void clear() {
-		taskView.clearTaskTree();
-		timelineView.getItems().clear();
+		timelineView.clear();
+		taskView.clear();
+		taskView.addTask(new GanttTask("New Task"));
+		projectName.setBaseText(GANTT_DEFAULT_NAME);
 	}
 
-	public void resetTimeline(LocalDate start, LocalDate end) {
-		chartStartDate = start;
-		chartEndDate = end;
-		timelineView.getColumns().clear();
-		initTimeline(start,end);
-	}
+//	public void resetTimeline(LocalDate start, LocalDate end) {
+//		timelineView.reset(start, end);
+//	}
 
 	public int addTask(GanttTask task) {
 		return taskView.addTask(task);
@@ -129,50 +132,12 @@ public class GanttChart implements TaskListener {
 	public int addTask(GanttTask task, int... path) {
 		return taskView.addTask(task, path);
 	}
-
 	
-	/* ******************************************************** */
-	/* 	PRIVATE METHOD											*/
-	/* ******************************************************** */
-	private void initTimeline(LocalDate start, LocalDate end) {
-		for(int m = start.getMonthValue(); m <= end.getMonthValue(); m++) {
-			TableColumn<GanttTask,GanttBarPiece> monthCol = new TableColumn<GanttTask,GanttBarPiece>();
-			Label month = new Label(Month.of(m).toString());
-			monthCol.setGraphic(month);
-
-			LocalDate chartStart = null;
-			LocalDate tmp = LocalDate.of(start.getYear(), m, 1);
-
-			chartStart = start.compareTo(tmp) > 0 ? start : tmp;
-
-			for(int d = chartStart.getDayOfMonth(); d <= chartStart.lengthOfMonth(); d++) {
-				GanttDayColumn c = new GanttDayColumn(chartStart.getYear(), m, d);
-				c.setPrefWidth(20);
-				Label day = new Label(Integer.toString(d));
-				c.setGraphic(day);
-				monthCol.getColumns().add(c);
-			}
-
-			timelineView.getColumns().add(monthCol);
-		}
-
-		timelineView.setItems(FXCollections.observableArrayList());
-
-		// TODO make timeline right-left scrollable with wheel on windows 
-	}
-
-	private void initTaskView() {
-		taskView.addTaskListener(this);
-	}
-	
-	private void initTimelineViewToolBar() {
-		timelineViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
-	}
-	
-	private void initTaskViewToolBar() {
-		taskViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
-	}
-	
+	/*********************************************
+	 *                                           *
+	 * TASK LISTENER		                     *
+	 *                                           *
+	 *********************************************/
 	@Override
 	public void taskAddedEvent(int taskRowIndex, GanttTask task) {
 		timelineView.getItems().add(taskRowIndex, task);		
@@ -180,14 +145,42 @@ public class GanttChart implements TaskListener {
 
 	@Override
 	public void taskEditedEvent(int taskRowIndex, GanttTask task) {
-		
-		System.out.println(task.toString());
-		// TODO Auto-generated method stub
-		//timelineView.getItems().
+		timelineView.getItems().set(taskRowIndex, task);
 	}
 
 	@Override
 	public void taskRemovedEvent(int taskRowIndex) {
 		timelineView.getItems().remove(taskRowIndex);
 	}
+	
+	/*********************************************
+	 *                                           *
+	 * PRIVATE METHODS		                     *
+	 *                                           *
+	 *********************************************/
+	private void initTimelineViewToolBar() {
+		timelineViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
+		
+		dpStart = new DatePicker(timelineView.getTimelineStart());
+		FXInput.setDateFormat(dpStart, TASK_DATE_FORMAT);
+		dpStart.setOnAction(event -> {
+			timelineView.resetStart(dpStart.getValue());
+		});
+		
+		dpEnd = new DatePicker(timelineView.getTimelineEnd());
+		FXInput.setDateFormat(dpEnd, TASK_DATE_FORMAT);
+		dpEnd.setOnAction(event -> {
+			timelineView.resetEnd(dpEnd.getValue());
+		});
+		
+		timelineViewToolBar.getItems().addAll(new Label("From: "), dpStart, new Label("To: "), dpEnd);
+	}
+	
+	private void initTaskViewToolBar() {
+		taskViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
+		projectName = new EditableLabel();
+		projectName.setBaseText(GANTT_DEFAULT_NAME);
+		taskViewToolBar.getItems().add(projectName);
+	}
+	
 }

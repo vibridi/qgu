@@ -22,10 +22,11 @@ public class QGUViewController extends BaseController {
 	@FXML private AnchorPane ganttPane;
 	
 	private GanttChart gantt;
+	private QGUStorageManager qsm; // TODO more meaningful variable name
 	
 	public QGUViewController() {
 		// TODO initialize menu recent files
-		
+		qsm = QGUStorageManager.instance;
 		gantt = new GanttChart(TaskUtils.readTaskTree("tasktree.txt")); // TODO initialize this by loading the last gantt project worked on OR a blank one
 	}
 	
@@ -54,7 +55,7 @@ public class QGUViewController extends BaseController {
 	public void newGantt() {
 		// TODO check if there is an open gantt and warn user
 		gantt.clear();
-		QGUStorageManager.instance.setHandle(null);
+		qsm.setHandle(null);
 	}
 	
 	@FXML
@@ -77,13 +78,13 @@ public class QGUViewController extends BaseController {
 	@FXML
 	public void saveGantt() {
 		try {
-			if(!QGUStorageManager.instance.hasHandle()) {
+			if(!qsm.hasHandle()) {
 				File f = FXDialog.saveFile(stage, "gtt");
-				QGUStorageManager.instance.setHandle(f);
+				qsm.setHandle(f);
 			}
-			QGUStorageManager.instance.saveGantt(gantt.getGanttRoot());
+			qsm.saveGantt(gantt.getMetadata(), gantt.getGanttRoot());
 			
-		} catch(IOException e) {
+		} catch(Exception e) {
 			FXDialog.errorAlert("Cannot save file", e).showAndWait();
 		}
 	}
@@ -92,9 +93,9 @@ public class QGUViewController extends BaseController {
 	public void saveGanttAs() {
 		try {
 			File f = FXDialog.saveFile(stage, "gtt");
-			QGUStorageManager.instance.saveGantt(f, gantt.getGanttRoot());
+			qsm.saveGantt(f, gantt.getMetadata(), gantt.getGanttRoot());
 			
-		} catch(IOException e) {
+		} catch(Exception e) {
 			FXDialog.errorAlert("Cannot save file", e).showAndWait();
 		}
 	}

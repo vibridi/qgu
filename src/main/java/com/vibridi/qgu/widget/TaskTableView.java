@@ -2,7 +2,6 @@ package com.vibridi.qgu.widget;
 
 import java.util.Arrays;
 import java.util.TreeSet;
-import java.util.stream.IntStream;
 
 import com.vibridi.fxu.dialog.FXDialog;
 import com.vibridi.fxu.input.DatePickerTableCell;
@@ -13,6 +12,7 @@ import com.vibridi.qgu.widget.api.TaskListener;
 import com.vibridi.qgu.widget.api.TaskVisitor;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
@@ -25,7 +25,7 @@ import javafx.scene.control.cell.TextFieldTableCell;
 
 public class TaskTableView extends TableView<ObservableGanttTask> {
 	
-	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd";
+	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd";	 // TODO put in options
 	private final static String NEW_CHILD_KEY_SHORTCUT = "Ctrl+Shift+N";
 	private final static String NEW_SIBLING_KEY_SHORTCUT = "Ctrl+Alt+N";
 	private final static String DELETE_KEY_SHORTCUT = "Ctrl+Backspace";
@@ -50,29 +50,30 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		setEditable(true);
 		setRowFactory(this::tableRowFactory);
 		getItems().addListener(this::onChange);
+		getStyleClass().add("qgu-task-list");
 		
 		title = new TableColumn<ObservableGanttTask,String>("Task List");
 		
 		taskId = new TableColumn<ObservableGanttTask,String>("Id");
 		taskId.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-		//taskId.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn()); // TODO make this editable?
 		taskId.setSortable(false);
 		
 		taskName = new TableColumn<ObservableGanttTask,String>("Task");
-		taskName.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn());
 		taskName.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
-		taskName.setOnEditCommit(this::onEditCommit);
+		taskName.setCellFactory(TextFieldTableCell.<ObservableGanttTask>forTableColumn());
+		taskName.setOnEditCommit(this::onTaskNameEditCommit);
 		taskName.setSortable(false);
 		
 		startDate = new TableColumn<ObservableGanttTask,String>("Start");
 		startDate.setCellValueFactory(cellData -> cellData.getValue().startDateProperty());
 		startDate.setCellFactory(DatePickerTableCell.<ObservableGanttTask>forTableColumn(datePattern));
-		startDate.setOnEditCommit(this::onEditCommit);
+		startDate.setOnEditCommit(this::onStartDateEditCommit);
 		startDate.setSortable(false);
 		
 		endDate = new TableColumn<ObservableGanttTask,String>("End");
 		endDate.setCellValueFactory(cellData -> cellData.getValue().endDateProperty());
 		endDate.setCellFactory(DatePickerTableCell.<ObservableGanttTask>forTableColumn(datePattern));
+		endDate.setOnEditCommit(this::onEndDateEditCommit);
 		endDate.setSortable(false);
 		
 		title.getColumns().add(taskId);
@@ -163,15 +164,16 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		TaskUtils.walkDepthFirst(listRoot, callback);
 	}
 	
-	public void clearTaskTree() {
+	public void clear() {
+		getItems().clear();
 		listRoot.clear();
 	}
 	
 	
 	/*********************************************
-	 * 
-	 * PRIVATE METHODS
-	 * 
+	 *                                           *
+	 * PRIVATE METHODS		                     *
+	 *                                           *
 	 *********************************************/
 	public void onChange(ListChangeListener.Change<? extends ObservableGanttTask> change) {
 		while (change.next()) {
@@ -193,43 +195,103 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		} // end while
 	}
 	
-	private void onEditCommit(CellEditEvent<ObservableGanttTask, String> event) {
-		System.out.println("Edit event");
-		
+	private void onTaskNameEditCommit(CellEditEvent<ObservableGanttTask, String> event) {
 		if(event.getOldValue().equals(event.getNewValue())) {
 			event.consume();
 			return;
 		}
-		
+		event.getRowValue().setName(event.getNewValue());
+		//onEditCommit(event); // TODO maybe not necessary to propagate name change
+	}
+	
+	private void onStartDateEditCommit(CellEditEvent<ObservableGanttTask, String> event) {
+		if(event.getOldValue().equals(event.getNewValue())) {
+			event.consume();
+			return;
+		}
+		event.getRowValue().setStartDate(event.getNewValue());
+		onEditCommit(event);
+	}
+	
+	private void onEndDateEditCommit(CellEditEvent<ObservableGanttTask, String> event) {
+		if(event.getOldValue().equals(event.getNewValue())) {
+			event.consume();
+			return;
+		}
+		event.getRowValue().setEndDate(event.getNewValue());
+		onEditCommit(event);
+	}
+	
+	private void onEditCommit(CellEditEvent<ObservableGanttTask, String> event) {
 		taskListener.taskEditedEvent(event.getTablePosition().getRow(), event.getRowValue().getTask());
 	}
 	
+	/*********************************************
+	 *                                           *
+	 * CONTEXT MENU FACTORY	                     *
+	 *                                           *
+	 *********************************************/
 	private TableRow<ObservableGanttTask> tableRowFactory(TableView<ObservableGanttTask> table) {
 		final TableRow<ObservableGanttTask> row = new TableRow<>();
-	    final ContextMenu rowMenu = new ContextMenu();
 	    
-	    MenuItem newChildItem = new MenuItem("New child task");
-	    newChildItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_CHILD_KEY_SHORTCUT));
-	    newChildItem.setOnAction(event -> shortcutAddChild());
-	    
-	    MenuItem newSiblingItem = new MenuItem("New sibling task");
-	    newSiblingItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_SIBLING_KEY_SHORTCUT));
-	    newSiblingItem.setOnAction(event -> shortcutAddSibling());
-	    
-	    MenuItem removeItem = new MenuItem("Delete task");
-	    removeItem.setAccelerator(FXKeyboard.buildKeyCombination(DELETE_KEY_SHORTCUT));
-	    removeItem.setOnAction(event -> shortcutDelete(row.getIndex(), row.getItem()));
-	    
-	    rowMenu.getItems().addAll(newChildItem, newSiblingItem, removeItem);
-
-	    // only display context menu for non-null items:
-	    row.contextMenuProperty().bind(
-	      Bindings.when(Bindings.isNotNull(row.itemProperty()))
-	      .then(rowMenu)
-	      .otherwise((ContextMenu) null));
+		// only display context menu for non-null items
+		// TODO doesn't work as intended. level 3 items have the regular context menu
+		row.contextMenuProperty().bind(
+				Bindings.when(Bindings.isNull(row.itemProperty()))
+					.then((ContextMenu)null)
+					.otherwise(Bindings.when(row.indexProperty().isEqualTo(0))
+							.then(makeFirstTaskContextMenu())
+							.otherwise(Bindings.when(row.getItem() == null ? new SimpleBooleanProperty(false) : row.getItem().levelProperty().greaterThanOrEqualTo(3))
+									.then(makeBottomLevelTaskContextMenu(row))
+									.otherwise(makeRegularTaskContextMenu(row)))));
 	    return row;
 	}
 	
+	private ContextMenu makeFirstTaskContextMenu() {
+		ContextMenu rowMenu = new ContextMenu();
+		rowMenu.getItems().addAll(childMenuItem(), siblingMenuItem());
+		return rowMenu;
+	}
+	
+	private ContextMenu makeBottomLevelTaskContextMenu(TableRow<ObservableGanttTask> row) {
+		ContextMenu rowMenu = new ContextMenu();
+		rowMenu.getItems().addAll(siblingMenuItem(), deleteMenuItem(row));
+		return rowMenu;
+	}
+	
+	private ContextMenu makeRegularTaskContextMenu(TableRow<ObservableGanttTask> row) {
+		ContextMenu rowMenu = new ContextMenu();
+		rowMenu.getItems().addAll(childMenuItem(), siblingMenuItem(), deleteMenuItem(row));
+		return rowMenu;
+	}
+	
+	private MenuItem childMenuItem() {
+		MenuItem newChildItem = new MenuItem("New child task");
+	    newChildItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_CHILD_KEY_SHORTCUT));
+	    newChildItem.setOnAction(event -> shortcutAddChild());
+	    return newChildItem;
+	}
+	
+	private MenuItem siblingMenuItem() {
+	    MenuItem newSiblingItem = new MenuItem("New sibling task");
+	    newSiblingItem.setAccelerator(FXKeyboard.buildKeyCombination(NEW_SIBLING_KEY_SHORTCUT));
+	    newSiblingItem.setOnAction(event -> shortcutAddSibling());
+	    return newSiblingItem;
+	}
+	
+	private MenuItem deleteMenuItem(TableRow<ObservableGanttTask> row) {
+	    MenuItem removeItem = new MenuItem("Delete task");
+	    removeItem.setAccelerator(FXKeyboard.buildKeyCombination(DELETE_KEY_SHORTCUT));
+	    removeItem.setOnAction(event -> shortcutDelete(row.getIndex(), row.getItem()));
+	    return removeItem;
+	}
+	
+	
+	/*********************************************
+	 *                                           *
+	 * ACTIONS				                     *
+	 *                                           *
+	 *********************************************/
 	private void shortcutAddChild() {
 		ObservableGanttTask obs = getSelectionModel().getSelectedItem();
 		if(obs == null)

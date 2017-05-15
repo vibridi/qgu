@@ -6,6 +6,8 @@ import java.util.Collections;
 import com.vibridi.qgu.model.GanttTask;
 import com.vibridi.qgu.util.TaskUtils;
 
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
@@ -17,23 +19,15 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 	private StringProperty name;
 	private StringProperty startDate;
 	private StringProperty endDate;
+	private IntegerProperty level;
 	
 	public ObservableGanttTask(GanttTask task) {
 		this.task = task;
 		this.id = new SimpleStringProperty(indentation(task.getLevel()) + TaskUtils.pathToString(task.getPath()));
 		this.name = new SimpleStringProperty(indentation(task.getLevel()) + task.getName());
-		
-		name.addListener((a,b,c)-> {
-			System.out.println("Observable property NAME changed");
-		});
-		
 		this.startDate = new SimpleStringProperty(task.getStartDate().toString()); // TODO configure date format
-		
-		this.startDate.addListener((a,b,c) -> {
-			System.out.println("Observable property changed");
-		});
-		
 		this.endDate = new SimpleStringProperty(task.getEndDate().toString());
+		this.level = new SimpleIntegerProperty(task.getLevel());
 	}
 	
 	@Override 
@@ -80,8 +74,8 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 	}
 
 	public void setName(final String name) {
-		this.nameProperty().set(indentation(task.getLevel()) + name);
-		this.task.setName(name);
+		this.nameProperty().set(indentation(task.getLevel()) + name.trim());
+		this.task.setName(name.trim());
 	}
 
 	public StringProperty startDateProperty() {
@@ -128,6 +122,20 @@ public class ObservableGanttTask implements Comparable<ObservableGanttTask> {
 	
 	private String indentation(int level) {
 		return String.join("", Collections.nCopies(level-1, "  "));
+	}
+
+	public IntegerProperty levelProperty() {
+		return this.level;
+	}
+	
+
+	public int getLevel() {
+		return this.levelProperty().get();
+	}
+	
+
+	public void setLevel(final int level) {
+		this.levelProperty().set(level);
 	}
 	
 }
