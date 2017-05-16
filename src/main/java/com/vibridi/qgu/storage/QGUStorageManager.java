@@ -2,62 +2,102 @@ package com.vibridi.qgu.storage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.prefs.BackingStoreException;
 
 import com.dedalus.xml.exception.XMLException;
-import com.vibridi.qgu.exception.UnreadableGanttFileException;
-import com.vibridi.qgu.model.GanttMetadata;
-import com.vibridi.qgu.model.GanttTask;
+import com.vibridi.qgu.model.GanttData;
+import com.vibridi.qgu.util.AppContext;
 
-public enum QGUStorageManager {
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+public enum QGUStorageManager implements QGUStorageAgent {
 	instance;
-	
-	private QGUFileSystemStorage storage;
-	private File workDir; // possibly not needed
-	private File handle;
-	private boolean saved;
-	private Map<String,GanttTask> delta;
-	
+
+	private static final int MAX_RECENT = 5;
+	private static final String RECENT = "recent";
+	private static final String LAST_VIEWED = "last-viewed";
+
+	private QGUFileSystemStorage storage;	
+	private ObservableList<File> recent;
+
 	private QGUStorageManager() {
 		storage = new QGUFileSystemStorage();
-		delta = new HashMap<>();
-		handle = null;
-		saved = false;
-	}
-	
-	public void trackChange(GanttTask task) {
-		//delta.put(task.getUid(), task);
-		saved = false;
+		recent = loadRecentFiles();
 	}
 
-	public void saveGantt(GanttMetadata meta, GanttTask root) throws IOException, XMLException {
-		// TODO consider adding delta-saving capability
-		assert(handle != null);
-		saveGantt(handle, meta, root);
+	/**
+	 * Saves the current project and sets the file handle.
+	 * 
+	 * @param handle The file that will be written. It is responsibility of the caller to ensure that that this file exists and is writable.
+	 * @param meta Gantt metadata
+	 * @param root Gantt tree root task
+	 * @throws IOException - In case of an error when writing the file
+	 */
+	@Override
+	public void save(File handle, GanttData data) throws IOException {
+		assert(handle != null && handle.exists());
+		try {
+			storage.save(handle, data);
+		} catch (XMLException e) {
+			throw new IOException(e);
+		}
+		addRecentFile(handle);
 	}
-	
-	public void saveGantt(File handle, GanttMetadata meta, GanttTask root) throws IOException, XMLException {
-		storage.saveTree(handle, meta, root);
-		saved = true;
-	}
-	
-	public GanttTask loadGantt(File file) throws UnreadableGanttFileException {
+
+	/**
+	 * Loads a gantt project. 
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException 
+	 */
+	@Override
+	public GanttData load(File file) throws IOException {
 		assert(file.getName().endsWith(".gtt"));
-		GanttTask root = storage.load(file);
-		handle = file;
-		return root;
+		return storage.load(file);
+	}
+
+	public void addRecentFile(File file) {
+		recent.add(file);
+		AppContext.preferences.node(RECENT).put(file.getName(), file.getAbsolutePath());
+
+		if(recent.size() >= MAX_RECENT) {
+			file = recent.remove(0);
+			AppContext.preferences.node(RECENT).remove(file.getName());	
+		}
 	}
 	
-	public boolean hasHandle() {
-		return handle != null;
+	public void removeRecentFile(File file) {
+		AppContext.preferences.node(RECENT).remove(file.getName());
+	}
+
+	public ObservableList<File> getRecentFiles() {
+		return recent;
 	}
 	
-	public void setHandle(File handle) {
-		this.handle = handle;
+	public void rememberLastViewed(File handle) {
+		if(handle == null)
+			return;
+		AppContext.preferences.put(LAST_VIEWED, handle.getAbsolutePath());
 	}
 	
-	public boolean isSaved() {
-		return saved;
+	public File loadLastViewed() throws IOException {
+		return new File(AppContext.preferences.get(LAST_VIEWED, ""));
+	}
+	
+	public void forgetLastViewed() {
+		AppContext.preferences.put(LAST_VIEWED, "");
+	}
+
+	private ObservableList<File> loadRecentFiles() {
+		try {
+			ObservableList<File> obs = FXCollections.observableArrayList();
+			for(String fname : AppContext.preferences.node(RECENT).keys())
+				obs.add(new File(AppContext.preferences.node(RECENT).get(fname, "")));
+			return obs;
+		} catch(BackingStoreException e) {
+			throw new RuntimeException();
+		}
 	}
 }

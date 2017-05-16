@@ -7,23 +7,33 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
-public class GanttMetadata {
-
+public class GanttData {
+	
+	private GanttTask root;
 	private StringProperty ganttName;
 	private ObjectProperty<LocalDate> chartStartDate;
 	private ObjectProperty<LocalDate> chartEndDate;
 	
-	public GanttMetadata() {
+	public GanttData() {
 		this.ganttName = new SimpleStringProperty("(No name)");
 		this.chartStartDate = new SimpleObjectProperty<>();
 		this.chartEndDate = new SimpleObjectProperty<>();
 	}
 	
-	
-	public void clear() {
-//		ganttName = "(No name)";
-//		chartStartDate = null;
-//		chartEndDate = null;
+	public GanttData(String name, LocalDate start, LocalDate end, GanttTask root) {
+		this.ganttName = new SimpleStringProperty(name);
+		this.chartStartDate = new SimpleObjectProperty<>(start);
+		this.chartEndDate = new SimpleObjectProperty<>(end);
+		this.root = root;
+	}
+
+
+	public GanttTask getRoot() {
+		return root;
+	}
+
+	public void setRoot(GanttTask root) {
+		this.root = root;
 	}
 
 	/*********************************************

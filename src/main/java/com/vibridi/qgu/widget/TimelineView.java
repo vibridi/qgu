@@ -15,11 +15,11 @@ public class TimelineView extends TableView<GanttTask> {
 	private LocalDate timelineStart;
 	private LocalDate timelineEnd;
 	
-	public TimelineView(LocalDate start, LocalDate end) {
+	public TimelineView() {
 		this.getStyleClass().add("qgu-timeline");
 		this.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-		initTimeline(start, end);
 		this.setItems(FXCollections.observableArrayList());
+		reset(LocalDate.now(), LocalDate.now().plusDays(40));
 	}
 	
 	public void clear() {

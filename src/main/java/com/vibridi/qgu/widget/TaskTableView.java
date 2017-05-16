@@ -12,7 +12,6 @@ import com.vibridi.qgu.widget.api.TaskListener;
 import com.vibridi.qgu.widget.api.TaskVisitor;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
@@ -234,28 +233,18 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 	private TableRow<ObservableGanttTask> tableRowFactory(TableView<ObservableGanttTask> table) {
 		final TableRow<ObservableGanttTask> row = new TableRow<>();
 	    
-		// only display context menu for non-null items
-		// TODO doesn't work as intended. level 3 items have the regular context menu
 		row.contextMenuProperty().bind(
 				Bindings.when(Bindings.isNull(row.itemProperty()))
 					.then((ContextMenu)null)
 					.otherwise(Bindings.when(row.indexProperty().isEqualTo(0))
 							.then(makeFirstTaskContextMenu())
-							.otherwise(Bindings.when(row.getItem() == null ? new SimpleBooleanProperty(false) : row.getItem().levelProperty().greaterThanOrEqualTo(3))
-									.then(makeBottomLevelTaskContextMenu(row))
-									.otherwise(makeRegularTaskContextMenu(row)))));
+							.otherwise(makeRegularTaskContextMenu(row))));
 	    return row;
 	}
 	
 	private ContextMenu makeFirstTaskContextMenu() {
 		ContextMenu rowMenu = new ContextMenu();
 		rowMenu.getItems().addAll(childMenuItem(), siblingMenuItem());
-		return rowMenu;
-	}
-	
-	private ContextMenu makeBottomLevelTaskContextMenu(TableRow<ObservableGanttTask> row) {
-		ContextMenu rowMenu = new ContextMenu();
-		rowMenu.getItems().addAll(siblingMenuItem(), deleteMenuItem(row));
 		return rowMenu;
 	}
 	
@@ -299,9 +288,7 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		if(obs.getTask().getLevel() >= 3)
 			return;
 	
-		GanttTask task = new GanttTask("New Task");
-		int index = addTask(task, obs.getTask().getPath());
-		taskListener.taskAddedEvent(index, task);
+		addTask(new GanttTask("New Task"), obs.getTask().getPath());
 	}
 	
 	private void shortcutAddSibling() {
@@ -311,11 +298,10 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		if(obs.getTask().getLevel() > 3)
 			return;
 		
-		GanttTask task = new GanttTask("New Task");
-		int index = (obs.getTask().getLevel() == 1) ?
-			addTask(task) :
-			addTask(task, Arrays.copyOf(obs.getTask().getPath(), obs.getTask().getLevel() - 1));
-		taskListener.taskAddedEvent(index, task);
+		if(obs.getTask().getLevel() == 1)
+			addTask(new GanttTask("New Task"));
+		else
+			addTask(new GanttTask("New Task"), Arrays.copyOf(obs.getTask().getPath(), obs.getTask().getLevel() - 1));
 	}
 	
 	private void shortcutDelete() {
@@ -328,7 +314,7 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 			obs = getSelectionModel().getSelectedItem();
 		}
 
-		if(obs == null)
+		if(obs == null || index == 0)
 			return;
 		
 		if(obs.getTask().size() > 0) {
@@ -338,7 +324,6 @@ public class TaskTableView extends TableView<ObservableGanttTask> {
 		}
 		
 		removeTask(index);
-		//IntStream.range(0, numRemoved).forEach(i -> taskListener.taskRemovedEvent(readonlyIndex+i));
 	}
 	
 	private int makeInternalRepresentation(ObservableGanttTask obs) {

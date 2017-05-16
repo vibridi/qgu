@@ -1,12 +1,15 @@
 package com.vibridi.qgu.widget;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Arrays;
 
 import com.vibridi.fxu.input.EditableLabel;
 import com.vibridi.fxu.input.FXInput;
-import com.vibridi.qgu.model.GanttMetadata;
+import com.vibridi.qgu.model.GanttData;
 import com.vibridi.qgu.model.GanttTask;
+import com.vibridi.qgu.storage.QGUStorageAgent;
 import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.api.TaskListener;
 
@@ -33,15 +36,17 @@ public class GanttChart implements TaskListener {
 	private ToolBar taskViewToolBar;
 	private ToolBar timelineViewToolBar;
 	
-	private GanttMetadata metadata;
+	private GanttData metadata;
+	private QGUStorageAgent storageAgent;
+	private boolean saved;
 
 	public GanttChart(GanttTask root) {
 		this();
-		setGantt(root);
+		setGantt(new GanttData("New Gantt", LocalDate.now(), LocalDate.now().plusDays(60), root));
 	}
 
 	public GanttChart() {
-		timelineView = new TimelineView(LocalDate.now(), LocalDate.now().plusDays(60));
+		timelineView = new TimelineView();
 
 		timelineViewToolBar = new ToolBar();
 		initTimelineViewToolBar();
@@ -52,10 +57,13 @@ public class GanttChart implements TaskListener {
 		taskViewToolBar = new ToolBar();
 		initTaskViewToolBar();
 		
-		metadata = new GanttMetadata();
+		metadata = new GanttData();
 		metadata.ganttNameProperty().bind(projectName.baseTextProperty());
 		metadata.chartStartDateProperty().bind(dpStart.valueProperty());
 		metadata.chartEndDateProperty().bind(dpEnd.valueProperty());
+		metadata.setRoot(getGanttRoot());
+		
+		saved = false;
 	}
 
 	public void setTaskViewParent(AnchorPane parent) {
@@ -96,29 +104,48 @@ public class GanttChart implements TaskListener {
 	 * API METHODS			                     *
 	 *                                           *
 	 *********************************************/
-	public void setGantt(GanttTask root) {		
-		taskView.clear();
-		TaskUtils.walkDepthFirst(root, node -> {
-			if(node.isRoot())
-				return;
-			taskView.addTask(node.clone(), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
-		});
-		
+	/**
+	 * 
+	 * @param listener
+	 */
+	public void setStorageAgent(QGUStorageAgent storageAgent) {
+		this.storageAgent = storageAgent;
+	}
+	
+	public void loadGantt(File file) throws IOException {
+		if(storageAgent == null)
+			throw new IllegalStateException("Storage agent hasn't been set. Call setStorageAgent(...) before invoking load/save operations");
+		setGantt(storageAgent.load(file));
+	}
+	
+	public void saveGantt(File file) throws IOException {
+		if(storageAgent == null)
+			throw new IllegalStateException("Storage agent hasn't been set. Call setStorageAgent(...) before invoking load/save operations");
+		storageAgent.save(file, metadata);
+		saved = true;
+	}
+	
+	public boolean isSaved() {
+		return saved;
 	}
 	
 	public GanttTask getGanttRoot() {
 		return taskView.getGanttRoot();
 	}
 	
-	public GanttMetadata getMetadata() {
+	public GanttData getMetadata() {
 		return metadata;
 	}
 
+	/**
+	 * Clears all tasks and timeline pieces and adds a default task as first element.
+	 */
 	public void clear() {
 		timelineView.clear();
 		taskView.clear();
 		taskView.addTask(new GanttTask("New Task"));
 		projectName.setBaseText(GANTT_DEFAULT_NAME);
+		saved = false;
 	}
 
 //	public void resetTimeline(LocalDate start, LocalDate end) {
@@ -126,11 +153,19 @@ public class GanttChart implements TaskListener {
 //	}
 
 	public int addTask(GanttTask task) {
-		return taskView.addTask(task);
+		try {
+			return taskView.addTask(task);
+		} finally {
+			saved = false;
+		}
 	}
 
 	public int addTask(GanttTask task, int... path) {
-		return taskView.addTask(task, path);
+		try {
+			return taskView.addTask(task, path);
+		} finally {
+			saved = false;
+		}
 	}
 	
 	/*********************************************
@@ -140,17 +175,20 @@ public class GanttChart implements TaskListener {
 	 *********************************************/
 	@Override
 	public void taskAddedEvent(int taskRowIndex, GanttTask task) {
-		timelineView.getItems().add(taskRowIndex, task);		
+		timelineView.getItems().add(taskRowIndex, task);
+		registerChange();
 	}
 
 	@Override
 	public void taskEditedEvent(int taskRowIndex, GanttTask task) {
 		timelineView.getItems().set(taskRowIndex, task);
+		registerChange();
 	}
 
 	@Override
 	public void taskRemovedEvent(int taskRowIndex) {
 		timelineView.getItems().remove(taskRowIndex);
+		registerChange();
 	}
 	
 	/*********************************************
@@ -158,6 +196,26 @@ public class GanttChart implements TaskListener {
 	 * PRIVATE METHODS		                     *
 	 *                                           *
 	 *********************************************/
+	/**
+	 * Resets the gantt view and model to this gantt object.
+	 * 
+	 * @param data
+	 */
+	private void setGantt(GanttData data) {
+		projectName.setBaseText(data.getGanttName());
+		dpStart.setValue(data.getChartStartDate());
+		dpEnd.setValue(data.getChartEndDate());
+		timelineView.reset(dpStart.getValue(), dpEnd.getValue());
+		
+		taskView.clear();
+		TaskUtils.walkDepthFirst(data.getRoot(), node -> {
+			if(node.isRoot())
+				return;
+			taskView.addTask(node.clone(), Arrays.copyOf(node.getPath(), node.getPath().length - 1));
+		});
+		
+	}
+	
 	private void initTimelineViewToolBar() {
 		timelineViewToolBar.setPrefHeight(TOOLBAR_HEIGHT);
 		
@@ -181,6 +239,10 @@ public class GanttChart implements TaskListener {
 		projectName = new EditableLabel();
 		projectName.setBaseText(GANTT_DEFAULT_NAME);
 		taskViewToolBar.getItems().add(projectName);
+	}
+	
+	private void registerChange() {
+		saved = false;
 	}
 	
 }

@@ -9,10 +9,13 @@ import com.vibridi.fxu.keyboard.FXKeyboard;
 import com.vibridi.qgu.Main;
 import com.vibridi.qgu.exception.UnreadableGanttFileException;
 import com.vibridi.qgu.storage.QGUStorageManager;
-import com.vibridi.qgu.util.TaskUtils;
 import com.vibridi.qgu.widget.GanttChart;
 
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.WindowEvent;
 
@@ -20,20 +23,50 @@ public class QGUViewController extends BaseController {
 
 	@FXML private AnchorPane taskPane;
 	@FXML private AnchorPane ganttPane;
+	@FXML private Menu openRecentItem;
 	
 	private GanttChart gantt;
-	private QGUStorageManager qsm; // TODO more meaningful variable name
+	private File currentFile;
+	private QGUStorageManager storageManager;
 	
 	public QGUViewController() {
-		// TODO initialize menu recent files
-		qsm = QGUStorageManager.instance;
-		gantt = new GanttChart(TaskUtils.readTaskTree("tasktree.txt")); // TODO initialize this by loading the last gantt project worked on OR a blank one
+		storageManager = QGUStorageManager.instance;
+		gantt = new GanttChart();
+		gantt.setStorageAgent(storageManager);
+		
+		try {
+			File last = storageManager.loadLastViewed();
+			if(last != null && last.exists())
+				gantt.loadGantt(last);
+			else
+				emptyGantt();
+		} catch (IOException e) {
+			storageManager.forgetLastViewed();
+		}
 	}
 	
 	@FXML
 	public void initialize() {		
 		gantt.setTaskViewParent(taskPane);
 		gantt.setTimelineViewParent(ganttPane);
+		
+		// initialize recent files menu and sync's it to the storageManager list
+		storageManager.getRecentFiles().forEach(f -> openRecentItem.getItems().add(recentFileItem(f)));
+		storageManager.getRecentFiles().addListener((ListChangeListener.Change<? extends File> c) -> {
+			while(c.next()) {
+				if(c.wasAdded()) {
+					for(File addFile : c.getAddedSubList())
+						openRecentItem.getItems().add(recentFileItem(addFile));
+				}
+				if(c.wasRemoved()) {
+					for(File rmFile : c.getRemoved()) {
+						openRecentItem.getItems().filtered(item -> { 
+							return ((File)item.getUserData()).getName().equals(rmFile.getName()); 
+						}).clear();
+					}
+				}
+			} // end while
+		}); // end lambda
 	}
 	
 	@Override
@@ -46,16 +79,16 @@ public class QGUViewController extends BaseController {
 		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+E", event -> exportGantt());
 		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+S", event -> saveGantt());
 		FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+Shift+S", event -> saveGanttAs());
-		
-		//FXKeyboard.setKeyCombinationShortcut(stage.getScene().getRoot(), "Ctrl+T", event -> taskView.requestFocus());
-		
 	}
 
 	@FXML
 	public void newGantt() {
-		// TODO check if there is an open gantt and warn user
-		gantt.clear();
-		qsm.setHandle(null);
+		if(!gantt.isSaved()) {
+			ButtonType bt = FXDialog.binaryChoiceAlert("The current project has not been saved. Proceed?").showAndWait().get();
+			if(bt == ButtonType.YES) {
+				emptyGantt();
+			}
+		}		
 	}
 	
 	@FXML
@@ -63,9 +96,8 @@ public class QGUViewController extends BaseController {
 		try {
 			File f = FXDialog.openFile(stage, "gtt");
 			if(f != null)
-				gantt.setGantt(QGUStorageManager.instance.loadGantt(f));
-			
-		} catch (UnreadableGanttFileException e) {
+				openFile(f);
+		} catch (Throwable e) {
 			FXDialog.errorAlert(e.getMessage(), e).showAndWait(); // TODO make error msg conditional based on debug flag
 		}
 	}
@@ -78,12 +110,13 @@ public class QGUViewController extends BaseController {
 	@FXML
 	public void saveGantt() {
 		try {
-			if(!qsm.hasHandle()) {
-				File f = FXDialog.saveFile(stage, "gtt");
-				qsm.setHandle(f);
+			if(currentFile == null) {
+				currentFile = FXDialog.saveFile(stage, "gtt");
+				if(currentFile == null || !currentFile.exists())
+					return;
 			}
-			qsm.saveGantt(gantt.getMetadata(), gantt.getGanttRoot());
-			
+			gantt.saveGantt(currentFile);		
+			storageManager.rememberLastViewed(currentFile);
 		} catch(Exception e) {
 			FXDialog.errorAlert("Cannot save file", e).showAndWait();
 		}
@@ -92,9 +125,11 @@ public class QGUViewController extends BaseController {
 	@FXML 
 	public void saveGanttAs() {
 		try {
-			File f = FXDialog.saveFile(stage, "gtt");
-			qsm.saveGantt(f, gantt.getMetadata(), gantt.getGanttRoot());
-			
+			currentFile = FXDialog.saveFile(stage, "gtt");
+			if(currentFile == null || !currentFile.exists())
+				return;
+			gantt.saveGantt(currentFile);
+			storageManager.rememberLastViewed(currentFile);
 		} catch(Exception e) {
 			FXDialog.errorAlert("Cannot save file", e).showAndWait();
 		}
@@ -102,14 +137,22 @@ public class QGUViewController extends BaseController {
 	
 	@Override
 	protected void handleCloseRequest(WindowEvent event) {
-		// TODO Auto-generated method stub
+		if(!gantt.isSaved()) { // TODO add cancel button
+			ButtonType bt = FXDialog.binaryChoiceAlert("There are unsaved changes in this project. Save and close?").showAndWait().get();
+			if(bt == ButtonType.YES) {
+				saveGantt();
+			} else {
+				event.consume();
+				return;
+			}
+		}	
 		
+		storageManager.rememberLastViewed(currentFile);
 	}
 	
 	@FXML
-	public void toolbarNewItem() {
+	public void toolbarNewItem() { // TODO change
 		System.out.println("Menu choice: toolbarNewItem");
-		//taskView.addTask(TaskUtils.randomTask(LocalDate.of(2017, 5, 10), LocalDate.of(2017, 5, 31)));
 	}
 	
 	@FXML
@@ -121,4 +164,49 @@ public class QGUViewController extends BaseController {
 	public void toolbarDebug() {
 		System.out.println("Menu choice: toolbarDebug");
 	}
+	
+	/*********************************************
+	 *                                           *
+	 * PRIVATE METHODS		                     *
+	 *                                           *
+	 *********************************************/
+	/**
+	 * Initializes the current views to an empty gantt chart
+	 */
+	private void emptyGantt() {
+		gantt.clear();
+		currentFile = null;
+	}
+	
+	/**
+	 * 
+	 * @param f
+	 * @throws UnreadableGanttFileException
+	 */
+	private void openRecent(File f) {
+		if(!f.exists()) { // user might have moved it
+			FXDialog.warningAlert("This file doesn't exist anymore").showAndWait();
+			storageManager.removeRecentFile(f);
+			return;
+		}
+		
+		try {
+			openFile(f);
+		} catch(IOException e) {
+			FXDialog.errorAlert(e.getMessage(), e).showAndWait(); // TODO make error msg conditional based on debug flag
+		}
+	}
+	
+	private void openFile(File f) throws IOException {
+		currentFile = f;
+		gantt.loadGantt(f);
+	}
+	
+	private MenuItem recentFileItem(File f) {
+		MenuItem item = new MenuItem(f.getName() + "\t[" + f.getAbsolutePath() + "]");
+		item.setUserData(f);
+		item.setOnAction(event -> openRecent(f));
+		return item;
+	}
+	
 }
